@@ -9,7 +9,10 @@ cx = os.getenv("CX_ID")
 api_key = os.getenv("GOOGLE_API_KEY")
 
 
-def search(keyword):
+def get_source_url(keyword):
+    print(keyword)
+    print(cx)
+    print(api_key)
     url = "https://www.googleapis.com/customsearch/v1"
     params = {
         'q': keyword,
@@ -18,8 +21,22 @@ def search(keyword):
     }
     response = requests.get(url, params=params)
     data = response.json()
-    # print(data)
+    print(data)
     return data['items'][0]['link']
 
 
-# Replace with your own Programmable Search Engine ID and API Key
+def get_image_url(search_term):
+    url = "https://www.googleapis.com/customsearch/v1"
+    params = {
+        'q': search_term,
+        'cx': cx,
+        'key': api_key,
+        'searchType': 'image',
+        'num': 3
+    }
+    response = requests.get(url, params=params)
+    response_json = json.loads(response.text)
+    return response_json['items'][0]['link']
+
+
+# print(get_image_url("Stolen Focus - Johann Hari"))
