@@ -1,8 +1,8 @@
 import requests
 import json
 
-cx = "a432323d8b66f4a1f"
-api_key = "AIzaSyBQwyJpdhd3olus7yHPQnIFiZilxnC8o5A"
+cx = "CX_ID"
+api_key = "GOOGLE_API_KEY"
 
 
 def search(keyword):
