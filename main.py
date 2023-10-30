@@ -1,21 +1,24 @@
-import openai
-import os
-from dotenv import load_dotenv
-from app.Utils.pinecone import get_transcript_from_audio, get_profile_information, rewrite_adventure_story, get_image_generation_prompt
-from app.Utils.transcript import get_transcript_from_youtube
+from fastapi import FastAPI
+import app.Routers.Chatbot as Chatbot
+import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 
-url='https://youtu.be/2ekdc6jCu2E?si=HFY1m8JQmRP5Ln1x'
-get_transcript_from_youtube(url)
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.include_router(Chatbot.router, tags=["chatbot"])
 
 
-# get_transcript_from_audio()
+@app.get("/", tags=["Root"])
+async def root():
+    return {"message": "Hello World"}
 
-# file_content = ""
-# with open("./data/transcript/Oct 2022 Beach Trip.txt", "rb") as txt_file:
-#     file_content = str(txt_file.read())
 
-# get_profile_information(file_content)
-
-# rewrite_adventure_story(file_content)
-
-# get_image_generation_prompt(file_content)
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=9000, reload=True)
