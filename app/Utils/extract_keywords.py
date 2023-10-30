@@ -125,9 +125,9 @@ def run_conversation(context: str):
             response_message['function_call']['arguments'])
         print(json_response)
         print('--------------------')
-        update_answer(json_response)
-        print('______________________________')
-        return json_response
+        answer = update_answer(json_response)
+        json_data = json.loads(answer)
+        return json_data
     else:
         print("function_call_error!\n")
         return {}
