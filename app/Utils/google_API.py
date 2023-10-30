@@ -1,8 +1,12 @@
 import requests
 import json
+import os
+from dotenv import load_dotenv
 
-cx = "a432323d8b66f4a1f"
-api_key = "AIzaSyBQwyJpdhd3olus7yHPQnIFiZilxnC8o5A"
+load_dotenv()
+
+cx = os.getenv("CX_ID")
+api_key = os.getenv("GOOGLE_API_KEY")
 
 
 def search(keyword):
@@ -19,4 +23,3 @@ def search(keyword):
 
 
 # Replace with your own Programmable Search Engine ID and API Key
-
