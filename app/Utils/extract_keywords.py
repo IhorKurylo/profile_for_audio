@@ -9,6 +9,8 @@ load_dotenv()
 
 tokenizer = tiktoken.get_encoding('cl100k_base')
 
+transcript = ''
+
 
 def tiktoken_len(text):
     tokens = tokenizer.encode(
@@ -18,7 +20,7 @@ def tiktoken_len(text):
     return len(tokens)
 
 
-def convert_to_context(item):
+def convert_to_dict(item):
     # print("media 2: ", item)
     if "unknown" in (item["Title"].lower()) or "unknown" in (item["Author"].lower()):
         return "--------unknown---------------"
@@ -26,26 +28,32 @@ def convert_to_context(item):
     title = get_source_url(item["Title"])
     author = get_source_url(item["Author"])
     image = get_image_url(item["Title"])
-    # image = ""
-    # title = ""
-    # author = ""
-    result = f"""
-Category: {item["Category"]}
-Title: {item["Title"]} (source: {title})
-Author: {item["Author"]} (source: {author})
-Description:
-{item['Description']}
-Image: {image}
-    """
-    print("result: ", result)
+    result = {
+        "Category": item["Category"],
+        "Title": item["Title"],
+        "Title Source": title,
+        "Author": item["Author"],
+        "Author Source": author,
+        "Description": item['Description'],
+        "Image": image
+    }
+#     result = f"""
+# Category: {item["Category"]}
+# Title: {item["Title"]} (source: {title})
+# Author: {item["Author"]} (source: {author})
+# Description:
+# {item['Description']}
+# Image: {image}
+#     """
+    # print("result: ", result)
     return result
 
 
 def update_answer(sub_answer):
     # with open("./data/answer.txt", "w") as txt_file:
-    answer = ''
+    answer = []
     for item in sub_answer['media']:
-        answer += convert_to_context(item)
+        answer.append(convert_to_dict(item))
         # txt_file.write(answer)
     return answer
 
@@ -123,17 +131,18 @@ def run_conversation(context: str):
     if response_message.get("function_call"):
         json_response = json.loads(
             response_message['function_call']['arguments'])
-        print(json_response)
+        # print(json_response)
         print('--------------------')
         answer = update_answer(json_response)
-        json_data = json.loads(answer)
-        return json_data
+        return {"transcript": transcript, "media": answer}
     else:
         print("function_call_error!\n")
         return {}
 
 
 def extract_data(context: str):
+    global transcript
+    transcript = context[:100]
     length = len(context)
     sub_len = 28000
     current = 0

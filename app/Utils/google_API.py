@@ -10,9 +10,9 @@ api_key = os.getenv("GOOGLE_API_KEY")
 
 
 def get_source_url(keyword):
-    print(keyword)
-    print(cx)
-    print(api_key)
+    # print(keyword)
+    # print(cx)
+    # print(api_key)
     url = "https://www.googleapis.com/customsearch/v1"
     params = {
         'q': keyword,
@@ -21,7 +21,7 @@ def get_source_url(keyword):
     }
     response = requests.get(url, params=params)
     data = response.json()
-    print(data)
+    # print(data)
     return data['items'][0]['link']
 
 
