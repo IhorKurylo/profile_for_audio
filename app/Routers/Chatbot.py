@@ -33,7 +33,7 @@ def pipeline(value, functions):
 def extract_mentioned_data(url: str = Form(...)):
     start_time = time.time()
     functions = [extract_video_id, get_transcript_from_youtube,
-                 , complete_profile]
+                 extract_data, complete_profile]
     result = pipeline(url, functions)
     print(result)
     # complete_profile(context)
