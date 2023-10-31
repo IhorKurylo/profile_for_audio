@@ -23,7 +23,7 @@ def tiktoken_len(text):
 def convert_to_dict(item):
     # print("media 2: ", item)
     if "unknown" in (item["Title"].lower()) or "unknown" in (item["Author"].lower()):
-        return "--------unknown---------------"
+        return {}
 
     title = get_source_url(item["Title"])
     author = get_source_url(item["Author"])
@@ -53,7 +53,9 @@ def update_answer(sub_answer):
     # with open("./data/answer.txt", "w") as txt_file:
     answer = []
     for item in sub_answer['media']:
-        answer.append(convert_to_dict(item))
+        result = convert_to_dict(item)
+        if not result:
+            answer.append(result)
         # txt_file.write(answer)
     return answer
 
