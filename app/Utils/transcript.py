@@ -39,7 +39,7 @@ def extract_video_id(url):
 
 
 def get_transcript_from_youtube(video_id: str):
-    nltk.download('punkt')
+    # nltk.download('punkt')
     # video_id = extract_video_id(url)
     # Get the transcript of the video
     transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
