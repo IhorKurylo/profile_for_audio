@@ -55,6 +55,8 @@ def update_answer(sub_answer):
     for item in sub_answer['media']:
         result = convert_to_dict(item)
         if not result:
+            continue
+        else:
             answer.append(result)
         # txt_file.write(answer)
     return answer
