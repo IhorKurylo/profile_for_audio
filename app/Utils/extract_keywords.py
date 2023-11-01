@@ -133,6 +133,7 @@ def run_conversation(context: str):
     current_time = time.time()
     print("Elapsed Time: ", current_time - start_time)
     if response_message.get("function_call"):
+        print("response_message: ", response_message['function_call']['arguments'])
         json_response = json.loads(
             response_message['function_call']['arguments'])
         # print(json_response)
