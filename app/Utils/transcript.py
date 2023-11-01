@@ -4,6 +4,7 @@ import nltk
 from dotenv import load_dotenv
 import os
 import tiktoken
+from googleapiclient.discovery import build
 
 load_dotenv()
 tokenizer = tiktoken.get_encoding('cl100k_base')
@@ -42,6 +43,18 @@ def get_transcript_from_youtube(video_id: str):
     # nltk.download('punkt')
     # video_id = extract_video_id(url)
     # Get the transcript of the video
+    
+    # api_key = os.getenv("GOOGLE_API_KEY")
+    # youtube = build('youtube', 'v3', developerKey=api_key)
+    
+    # request = youtube.videos().list(
+    #     part="snippet",
+    #     id=video_id
+    # )
+    # response = request.execute()
+    # title = response['items'][0]['snippet']['title']
+    # print("title: ", title)
+
     transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
     transcript = ' '.join([segment['text'] for segment in transcript_list])
     sentences = nltk.sent_tokenize(transcript)

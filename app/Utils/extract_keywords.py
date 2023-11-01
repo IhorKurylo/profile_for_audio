@@ -149,7 +149,7 @@ def run_conversation(context: str):
         # print(json_response)
         print('--------------------')
         answer = update_answer(json_response)
-        return {"transcript": transcript, "media": answer}
+        return {"transcript": transcript, "title": "YouTube Video", "media": answer}
     else:
         print("function_call_error!\n")
         return {}
