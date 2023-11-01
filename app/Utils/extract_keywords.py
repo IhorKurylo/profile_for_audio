@@ -20,8 +20,17 @@ def tiktoken_len(text):
     return len(tokens)
 
 
+def check_item(item):
+    if ('Title' not in item) or ('Author' not in item) or ('Description' not in item) or ('Category' not in item):
+        return False
+    else:
+        return True
+
+
 def convert_to_dict(item):
     # print("media 2: ", item)
+    if not check_item(item):
+        return {}
     if "unknown" in (item["Title"].lower()) or "unknown" in (item["Author"].lower()):
         return {}
 
@@ -92,11 +101,11 @@ def run_conversation(context: str):
                                 },
                                 'Title': {
                                     'type': 'string',
-                                    'description': "This item can't contain the content of not specified or not mentioned but only exact name of title for this media. But don't say unknown or you don't know it. You must come up with it with your own knowledge only if title of which is not mentioned in the input context. If you don't know the exact title, you should print 'unknown'. In short, you should not print out that you do not know the exact title. In that case, print 'unown'."
+                                    'description': "This item can't contain the content of not specified or not mentioned but only exact name of title for this media. But don't say unknown or you don't know it. You must come up with it with your own knowledge only if title of which is not mentioned in the input context. If you don't know the exact title, you should print 'unknown'. In short, you should not print out that you do not know the exact title. In that case, print 'unknown'."
                                 },
                                 'Author': {
                                     'type': 'string',
-                                    'description': "This item can't contain the content of not specified or not mentioned but only exact name of Author for this media. Don't say unknown or you don't know it. You must come up with it with your own knowledge if author of which is not mentioned in the input context. If you don't know the exact author, you should print 'unknown'. In short, you should not print out that you do not know the exact title. In that case, print 'unown'."
+                                    'description': "This item can't contain the content of not specified or not mentioned but only exact name of Author for this media. Don't say unknown or you don't know it. You must come up with it with your own knowledge if author of which is not mentioned in the input context. If you don't know the exact author, you should print 'unknown'. In short, you should not print out that you do not know the exact title. In that case, print 'unknown'."
                                 },
                                 'Description': {
                                     'type': 'string',
@@ -133,7 +142,8 @@ def run_conversation(context: str):
     current_time = time.time()
     print("Elapsed Time: ", current_time - start_time)
     if response_message.get("function_call"):
-        print("response_message: ", response_message['function_call']['arguments'])
+        print("response_message: ",
+              response_message['function_call']['arguments'])
         json_response = json.loads(
             response_message['function_call']['arguments'])
         # print(json_response)
