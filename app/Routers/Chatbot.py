@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Form
-from app.Utils.transcript import extract_video_id, get_transcript_from_youtube
+from app.Utils.transcript import extract_video_id, get_transcript_from_youtube, get_title_from_youtube
 from app.Utils.extract_keywords import extract_data, complete_profile
 import time
 import asyncio
@@ -32,11 +32,14 @@ def pipeline(value, functions):
 @router.post("/extract_mentioned_data")
 def extract_mentioned_data(url: str = Form(...)):
     start_time = time.time()
-    
-    functions = [extract_video_id, get_transcript_from_youtube,
-                 extract_data, complete_profile]
+
+    video_id = extract_video_id(url)
+    title = get_title_from_youtube(video_id)
+
+    functions = [get_transcript_from_youtube, extract_data, complete_profile]
     # functions = [extract_video_id, get_transcript_from_youtube]
-    result = pipeline(url, functions)
+    result = pipeline(video_id, functions)
+    result['title'] = title
     print(result)
     # # complete_profile(context)
     # print("here")

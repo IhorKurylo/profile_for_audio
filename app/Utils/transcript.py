@@ -39,21 +39,24 @@ def extract_video_id(url):
     return None
 
 
+def get_title_from_youtube(video_id: str):
+    api_key = os.getenv("YouTube_API_KEY")
+    youtube = build('youtube', 'v3', developerKey=api_key)
+    
+    request = youtube.videos().list(
+        part="snippet",
+        id=video_id
+    )
+    response = request.execute()
+    title = response['items'][0]['snippet']['title']
+    # print("title: ", title)
+    return title
+
 def get_transcript_from_youtube(video_id: str):
     # nltk.download('punkt')
     # video_id = extract_video_id(url)
     # Get the transcript of the video
     
-    # api_key = os.getenv("GOOGLE_API_KEY")
-    # youtube = build('youtube', 'v3', developerKey=api_key)
-    
-    # request = youtube.videos().list(
-    #     part="snippet",
-    #     id=video_id
-    # )
-    # response = request.execute()
-    # title = response['items'][0]['snippet']['title']
-    # print("title: ", title)
 
     transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
     transcript = ' '.join([segment['text'] for segment in transcript_list])
