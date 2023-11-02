@@ -230,7 +230,7 @@ def extract_data(context: str):
             time.sleep(max(0, 60-delta_time))
         except Exception as e:
             print("get structured answer error!")
-            return ""
+            continue
     return result
 
 
