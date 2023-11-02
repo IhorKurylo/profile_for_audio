@@ -28,50 +28,56 @@ def check_item(item):
 
 
 def convert_to_dict(item):
-    # print("media 2: ", item)
-    if not check_item(item):
-        return {}
-    if "unknown" in (item["Title"].lower()) or "unknown" in (item["Author"].lower()):
-        return {}
+    try:
+        if not check_item(item):
+            return {}
+        if "unknown" in (item["Title"].lower()) or "unknown" in (item["Author"].lower()):
+            return {}
 
-    title = get_source_url(item["Title"])
-    author = get_source_url(item["Author"])
-    image = get_image_url(item["Title"])
-    result = {
-        "Category": item["Category"],
-        "Title": item["Title"],
-        "Title Source": title,
-        "Author": item["Author"],
-        "Author Source": author,
-        "Description": item['Description'],
-        "Image": image
-    }
-#     result = f"""
-# Category: {item["Category"]}
-# Title: {item["Title"]} (source: {title})
-# Author: {item["Author"]} (source: {author})
-# Description:
-# {item['Description']}
-# Image: {image}
-#     """
-    # print("result: ", result)
-    return result
+        title = get_source_url(item["Title"])
+        author = get_source_url(item["Author"])
+        image = get_image_url(item["Title"])
+        result = {
+            "Category": item["Category"],
+            "Title": item["Title"],
+            "Title Source": title,
+            "Author": item["Author"],
+            "Author Source": author,
+            "Description": item['Description'],
+            "Image": image
+        }
+        return result
+    except:
+        result = {
+            "Category": "OpenAI Server Error",
+            "Title": "OpenAI Server Error",
+            "Title Source": "",
+            "Author": "OpenAI Server Error",
+            "Author Source": "",
+            "Description": "OpenAI Server Error",
+            "Image": ""
+        }
+        print("convert to dict error!")
+        return result
 
 
 def update_answer(sub_answer):
-    # with open("./data/answer.txt", "w") as txt_file:
     answer = []
-    for item in sub_answer['media']:
-        result = convert_to_dict(item)
-        if not result:
-            continue
-        else:
-            answer.append(result)
-        # txt_file.write(answer)
-    return answer
+    try:
+        for item in sub_answer['media']:
+            result = convert_to_dict(item)
+            if not result:
+                continue
+            else:
+                answer.append(result)
+            # txt_file.write(answer)
+        return answer
+    except:
+        print("updata answer error!")
+        return []
 
 
-def run_conversation(context: str):
+def get_structured_answer(context: str):
     # Step 1: send the conversation and available functions to GPT
     start_time = time.time()
     instructor = f"""
@@ -123,35 +129,37 @@ def run_conversation(context: str):
     ]
     print('here2')
 
-    response = openai.ChatCompletion.create(
-        model='gpt-4',
-        max_tokens=1000,
-        messages=[
-            {'role': 'system', 'content': instructor},
-            {'role': 'user', 'content': f"""
-                This is the input content you have to analyze.
-                {context}
-                Please provide me the data about medias such as books, movies, articles, podcasts mentioned above.
-            """}
-        ],
-        functions=functions,
-        function_call={"name": "extract_media_info"}
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model='gpt-4',
+            max_tokens=1000,
+            messages=[
+                {'role': 'system', 'content': instructor},
+                {'role': 'user', 'content': f"""
+                    This is the input content you have to analyze.
+                    {context}
+                    Please provide me the data about medias such as books, movies, articles, podcasts mentioned above.
+                """}
+            ],
+            functions=functions,
+            function_call={"name": "extract_media_info"}
+        )
 
-    response_message = response["choices"][0]["message"]
-    current_time = time.time()
-    print("Elapsed Time: ", current_time - start_time)
-    if response_message.get("function_call"):
-        print("response_message: ",
-              response_message['function_call']['arguments'])
-        json_response = json.loads(
-            response_message['function_call']['arguments'])
-        # print(json_response)
-        print('--------------------')
-        answer = update_answer(json_response)
-        return {"transcript": transcript, "media": answer}
-    else:
-        print("function_call_error!\n")
+        response_message = response["choices"][0]["message"]
+        current_time = time.time()
+        print("Elapsed Time: ", current_time - start_time)
+        if response_message.get("function_call"):
+            print("response_message: ",
+                  response_message['function_call']['arguments'])
+            json_response = json.loads(
+                response_message['function_call']['arguments'])
+            answer = update_answer(json_response)
+            return {"transcript": transcript, "media": answer}
+        else:
+            print("function_call_error!\n")
+            return {}
+    except:
+        print("updata answer error!")
         return {}
 
 
@@ -215,16 +223,14 @@ def extract_data(context: str):
                 # stream=True
             )
             result += response.choices[0].message.content + '\n'
-            # print("context: ", result)
-            current_time = time.time()
-            # print(response.choices[0].message.content + '\n')
-            # result = run_conversation(result)
             current_time = time.time()
             print("Elapsed time: ", current_time - start_time)
+
             delta_time = current_time - start_time
             time.sleep(max(0, 60-delta_time))
         except Exception as e:
-            print(e)
+            print("get structured answer error!")
+            return ""
     return result
 
 
@@ -232,4 +238,4 @@ def complete_profile(context: str):
     print("context: ", context, '\n')
     print("---------------------------------------------------\n")
 
-    return run_conversation(context)
+    return get_structured_answer(context)
