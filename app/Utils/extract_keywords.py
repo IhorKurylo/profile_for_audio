@@ -127,6 +127,7 @@ def get_structured_answer(context: str):
             }
         }
     ]
+    
     print('here2')
 
     try:
