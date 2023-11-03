@@ -127,7 +127,7 @@ def get_structured_answer(context: str):
             }
         }
     ]
-    
+
     print('here2')
 
     try:
@@ -230,8 +230,9 @@ def extract_data(context: str):
             delta_time = current_time - start_time
             time.sleep(max(0, 60-delta_time))
         except Exception as e:
-            print("get structured answer error!")
+            print("extract data error!")
             continue
+        break
     return result
 
 
