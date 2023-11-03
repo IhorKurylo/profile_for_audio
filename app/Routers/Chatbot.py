@@ -15,11 +15,12 @@ def pipeline(value, functions):
 
 @router.post("/extract_mentioned_data")
 def extract_mentioned_data(url: str = Form(...)):
-    if url == "https://www.youtube.com/watch?v=_WNL6dUFRiA&list=PLDBZgkgeoMJhpMxQ0sqpdhHYv4lZOf0J8&index=7":
-        return {}
+    # if url == "https://www.youtube.com/watch?v=_WNL6dUFRiA&list=PLDBZgkgeoMJhpMxQ0sqpdhHYv4lZOf0J8&index=7":
+    #     return {}
     print("start")
     start_time = time.time()
     video_id = extract_video_id(url)
+    print("video_id: ", video_id)
     title = get_title_from_youtube(video_id)
     functions = [get_transcript_from_youtube, extract_data, complete_profile]
     result = pipeline(video_id, functions)
