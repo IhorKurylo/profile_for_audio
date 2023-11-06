@@ -232,7 +232,6 @@ def extract_data(context: str):
         except Exception as e:
             print("extract data error!")
             continue
-        break
     return result
 
 
