@@ -49,6 +49,6 @@ def extract_mentioned_data(url: str = Form(...)):
         ],
         "transcript": "YouTube Video",
     }
-    current_time = time.time()
-    print("Total Time: ", current_time - start_time)
+    # current_time = time.time()
+    # print("Total Time: ", current_time - start_time)
     return result
