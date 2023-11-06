@@ -47,7 +47,7 @@ def extract_mentioned_data(url: str = Form(...)):
                 "Image": "https://www.lifespanpodcast.com/content/images/2022/01/Welcome-Message-Title-Card-2.jpg"
             }
         ],
-        "transcript": "YouTube Video",
+        "title": "YouTube Video",
     }
     # current_time = time.time()
     # print("Total Time: ", current_time - start_time)
