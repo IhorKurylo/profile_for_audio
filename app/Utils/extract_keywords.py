@@ -166,7 +166,7 @@ def get_structured_answer(context: str):
 
 def extract_data(context: str):
     global transcript
-    transcript = context[:100]
+    transcript = context[:1000]
     length = len(context)
     sub_len = 28000
     current = 0
