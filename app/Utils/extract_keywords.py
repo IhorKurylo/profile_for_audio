@@ -230,6 +230,9 @@ def extract_data(context: str):
             delta_time = current_time - start_time
             if current < length:
                 time.sleep(max(0, 60-delta_time))
+            else:
+                if tiktoken_len(instructor + result) > 19000:
+                    time.sleep(max(0, 60-delta_time))
         except Exception as e:
             # print("extract data error!")
             print(e)

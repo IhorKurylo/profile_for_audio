@@ -62,4 +62,5 @@ def get_transcript_from_youtube(video_id: str):
     for sentence in sentences:
         # txt_file.write(sentence + '.\n')
         context += sentence + '.\n'
+    
     return context
