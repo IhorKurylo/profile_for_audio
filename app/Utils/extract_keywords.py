@@ -168,9 +168,9 @@ def get_structured_answer(context: str):
 
 def extract_data(context: str):
     global transcript
-    transcript = context[:200]
+    transcript = context[:300]
     length = len(context)
-    sub_len = 70000
+    sub_len = 74000
     current = 0
     result = ""
     while current < length:
@@ -229,11 +229,7 @@ def extract_data(context: str):
             print("Elapsed time: ", current_time - start_time)
 
             delta_time = current_time - start_time
-            if current < length:
-                time.sleep(max(0, 60-delta_time))
-            else:
-                if tiktoken_len(instructor + result) > 19000:
-                    time.sleep(max(0, 60-delta_time))
+            time.sleep(max(0, 60-delta_time))
         except Exception as e:
             # print("extract data error!")
             print(e)
