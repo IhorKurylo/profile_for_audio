@@ -134,7 +134,7 @@ def get_structured_answer(context: str):
     try:
         response = client.chat.completions.create(
             model='gpt-4-1106-preview',
-            max_tokens=2000,
+            max_tokens=4000,
             messages=[
                 {'role': 'system', 'content': instructor},
                 {'role': 'user', 'content': f"""
@@ -170,7 +170,7 @@ def extract_data(context: str):
     global transcript
     transcript = context[:200]
     length = len(context)
-    sub_len = 75000
+    sub_len = 70000
     current = 0
     result = ""
     while current < length:
