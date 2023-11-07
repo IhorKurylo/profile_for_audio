@@ -162,7 +162,6 @@ def get_structured_answer(context: str):
             return {}
     except Exception as e:
         print(e)
-        print("updata answer error!")
         return {}
 
 
