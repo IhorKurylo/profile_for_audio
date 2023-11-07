@@ -116,7 +116,7 @@ def get_structured_answer(context: str):
                                 },
                                 'Description': {
                                     'type': 'string',
-                                    'description': "This item must contain detailed description about the media. Output as much as possible with your own knowledge as well as body of above text."
+                                    'description': "Detailed description about each media mentioned in input text. This item must contain detailed description about each media. Output as much as possible with your own knowledge as well as body of above text."
                                 },
 
                             }
@@ -208,18 +208,17 @@ def extract_data(context: str):
                         Category: Book
                         Title: Stolen Focus
                         Author: Johann Hari
-                        Description:
-                        This book by Johann Hari explores the issue of how our attention is being constantly stolen by various distractions. He delves into the impact of this on our capability to think and work efficiently and on fulfilling our lives. The author has conducted extensive research and interviews with experts in fields like technology, psychology, and neuroscience to support his findings.
+                        Description: This book by Johann Hari explores the issue of how our attention is being constantly stolen by various distractions. He delves into the impact of this on our capability to think and work efficiently and on fulfilling our lives. The author has conducted extensive research and interviews with experts in fields like technology, psychology, and neuroscience to support his findings.
 
                         Category: Podcasts
                         Title: unknown
                         Author: unknown
-                        This particular episode on Dr. Andrew Huberman's podcast is not specified, but he mentions having various guests on.
+                        Description: This particular episode on Dr. Andrew Huberman's podcast is not specified, but he mentions having various guests on.
 
                         Movie:
                         Title: "Mad Men".
                         Author: unknown
-                        This is an American period drama television series. The series ran on the cable network AMC from 2007 to 2015, consisting of seven seasons and 92 episodes. Its main character, Don Draper, is a talented advertising executive with a mysterious past. This is the character with whom Rob Dyrdek identified himself in the context.
+                        Description: This is an American period drama television series. The series ran on the cable network AMC from 2007 to 2015, consisting of seven seasons and 92 episodes. Its main character, Don Draper, is a talented advertising executive with a mysterious past. This is the character with whom Rob Dyrdek identified himself in the context.
                         ...
                     """}
                 ],
