@@ -1,9 +1,10 @@
 from app.Utils.google_API import get_source_url, get_image_url
 import time
-import openai
 import json
 import tiktoken
 from dotenv import load_dotenv
+from openai import OpenAI
+client = OpenAI()
 
 load_dotenv()
 
@@ -131,7 +132,7 @@ def get_structured_answer(context: str):
     print('here2')
 
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model='gpt-4-1106-preview',
             max_tokens=2000,
             messages=[
@@ -145,21 +146,20 @@ def get_structured_answer(context: str):
             functions=functions,
             function_call={"name": "extract_media_info"}
         )
-
-        response_message = response["choices"][0]["message"]
+        response_message = response.choices[0].message
         current_time = time.time()
         print("Elapsed Time: ", current_time - start_time)
-        if response_message.get("function_call"):
+        if hasattr(response_message, "function_call"):
             print("response_message: ",
-                  response_message['function_call']['arguments'])
-            json_response = json.loads(
-                response_message['function_call']['arguments'])
+                  response_message.function_call.arguments)
+            json_response = json.loads(response_message.function_call.arguments)
             answer = update_answer(json_response)
             return {"transcript": transcript, "media": answer}
         else:
             print("function_call_error!\n")
             return {}
-    except:
+    except Exception as e:
+        print(e)
         print("updata answer error!")
         return {}
 
@@ -191,7 +191,7 @@ def extract_data(context: str):
 
         print("tiktoken_len: ", tiktoken_len(instructor), '\n')
         try:
-            response = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model='gpt-4-1106-preview',
                 max_tokens=2500,
                 messages=[
