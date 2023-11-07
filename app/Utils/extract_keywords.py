@@ -132,8 +132,8 @@ def get_structured_answer(context: str):
 
     try:
         response = openai.ChatCompletion.create(
-            model='gpt-4',
-            max_tokens=1000,
+            model='gpt-4-1106-preview',
+            max_tokens=2000,
             messages=[
                 {'role': 'system', 'content': instructor},
                 {'role': 'user', 'content': f"""
@@ -168,7 +168,7 @@ def extract_data(context: str):
     global transcript
     transcript = context[:100]
     length = len(context)
-    sub_len = 28000
+    sub_len = 75000
     current = 0
     result = ""
     while current < length:
@@ -192,8 +192,8 @@ def extract_data(context: str):
         print("tiktoken_len: ", tiktoken_len(instructor), '\n')
         try:
             response = openai.ChatCompletion.create(
-                model='gpt-4',
-                max_tokens=800,
+                model='gpt-4-1106-preview',
+                max_tokens=2500,
                 messages=[
                     {'role': 'system', 'content': instructor},
                     {'role': 'user', 'content': f"""
@@ -228,11 +228,14 @@ def extract_data(context: str):
             print("Elapsed time: ", current_time - start_time)
 
             delta_time = current_time - start_time
-            time.sleep(max(0, 60-delta_time))
+            if current < length:
+                time.sleep(max(0, 60-delta_time))
         except Exception as e:
-            print("extract data error!")
+            # print("extract data error!")
+            print(e)
+            current = max(0, current - sub_len)
+            time.sleep(60)
             continue
-        break
     return result
 
 
