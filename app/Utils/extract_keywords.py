@@ -116,7 +116,7 @@ def get_structured_answer(context: str):
                                 },
                                 'Description': {
                                     'type': 'string',
-                                    'description': "This item can't contain the content of not specified or not mentioned but only detailed description about the media. Output as much as possible with your own knowledge as well as body of above text."
+                                    'description': "This item must contain detailed description about the media. Output as much as possible with your own knowledge as well as body of above text."
                                 },
 
                             }
@@ -152,8 +152,10 @@ def get_structured_answer(context: str):
         if hasattr(response_message, "function_call"):
             print("response_message: ",
                   response_message.function_call.arguments)
-            json_response = json.loads(response_message.function_call.arguments)
+            json_response = json.loads(
+                response_message.function_call.arguments)
             answer = update_answer(json_response)
+            print("answer: ", answer)
             return {"transcript": transcript, "media": answer}
         else:
             print("function_call_error!\n")
