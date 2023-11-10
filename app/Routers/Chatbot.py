@@ -15,6 +15,7 @@ def pipeline(value, functions):
 
 @router.post("/extract_mentioned_data")
 def extract_mentioned_data(url: str = Form(...)):
+    print(url)
     result = {
         "transcript": "one of the best quotes from this book summarizes it completely it's only after you've lost everything that you're free to do anything i'm ryan holiday these are some of my absolute favorite books i think sometimes people read books and then you're like what was that book about again and they have no",
         "media": [
