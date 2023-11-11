@@ -41,9 +41,9 @@ def convert_to_dict(item):
         result = {
             "Category": item["Category"],
             "Title": item["Title"],
-            "Title Source": title,
+            "Title_Source": title,
             "Author": item["Author"],
-            "Author Source": author,
+            "Author_Source": author,
             "Description": item['Description'],
             "Image": image
         }
@@ -52,9 +52,9 @@ def convert_to_dict(item):
         result = {
             "Category": "OpenAI Server Error",
             "Title": "OpenAI Server Error",
-            "Title Source": "",
+            "Title_Source": "",
             "Author": "OpenAI Server Error",
-            "Author Source": "",
+            "Author_Source": "",
             "Description": "OpenAI Server Error",
             "Image": ""
         }
