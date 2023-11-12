@@ -28,6 +28,13 @@ def extract_mentioned_data(url: str = Form(...)):
     functions = [get_transcript_from_youtube, extract_data, complete_profile]
     result = pipeline(video_id, functions)
     result['title'] = title
+    result['url'] = url
+    current_category = "---"
+    for item in result['media']:
+        if item["Category"] == current_category:
+            item["Category"] = ""
+        current_category = item["Category"]
+
     current_time = time.time()
     print("Total Time: ", current_time - start_time)
     return result
