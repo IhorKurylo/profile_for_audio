@@ -33,7 +33,8 @@ def extract_mentioned_data(url: str = Form(...)):
     for item in result['media']:
         if item["Category"] == current_category:
             item["Category"] = ""
-        current_category = item["Category"]
+        else:
+            current_category = item["Category"]
 
     current_time = time.time()
     print("Total Time: ", current_time - start_time)
