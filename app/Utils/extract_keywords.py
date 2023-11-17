@@ -1,4 +1,4 @@
-from app.Utils.google_API import get_source_url, get_image_url
+from app.Utils.google_API import get_source_url, get_image_url, get_map_image_url
 import time
 import json
 import tiktoken
@@ -21,16 +21,21 @@ def tiktoken_len(text):
     return len(tokens)
 
 
-def check_item(item):
+def check_media(item):
     if ('Title' not in item) or ('Author' not in item) or ('Description' not in item) or ('Category' not in item):
         return False
     else:
         return True
 
+def check_place(item):
+    if ('Title' not in item) or ('Subtitle' not in item) or ('Description' not in item) or ('Category' not in item):
+        return False
+    else:
+        return True
 
-def convert_to_dict(item):
+def convert_media_to_dict(item):
     try:
-        if not check_item(item):
+        if not check_media(item):
             return {}
         if "unknown" in (item["Title"].lower()) or "unknown" in (item["Author"].lower()):
             return {}
@@ -45,10 +50,13 @@ def convert_to_dict(item):
             "Author": item["Author"],
             "Author_Source": author,
             "Description": item['Description'],
-            "Image": image
+            "Image": image,
+            "Launch_URL": image,
+            "Key": 'Author'
         }
         return result
-    except:
+    except Exception as e:
+        print(e)
         result = {
             "Category": "OpenAI Server Error",
             "Title": "OpenAI Server Error",
@@ -56,9 +64,50 @@ def convert_to_dict(item):
             "Author": "OpenAI Server Error",
             "Author_Source": "",
             "Description": "OpenAI Server Error",
-            "Image": ""
+            "Image": "",
+            "Launch_URL": "",
+            "Key":""
         }
-        print("convert to dict error!")
+        print("convert media to dict error!")
+        return result
+
+def convert_place_to_dict(item):
+    try:
+        if not check_place(item):
+            return {}
+        if "unknown" in (item["Title"].lower()) or "unknown" in (item["Subtitle"].lower()):
+            return {}
+
+        title = get_source_url(item["Category"] + ' ' + item["Title"])
+        subtitle = get_source_url(item["Category"] + ' ' + item["Subtitle"])
+        image = get_image_url(item["Category"] + ' ' + item["Title"])
+        map_image = get_map_image_url(item["Category"] + ' ' + item["Title"])
+        result = {
+            "Category": item["Category"],
+            "Title": item["Title"],
+            "Title_Source": title,
+            "Author": item["Subtitle"],
+            "Author_Source": title,
+            "Description": item['Description'],
+            "Image": image,
+            "Launch_URL": map_image,
+            "Key": 'Subtitle'
+        }
+        return result
+    except Exception as e:
+        print(e)
+        result = {
+            "Category": "OpenAI Server Error",
+            "Title": "OpenAI Server Error",
+            "Title_Source": "",
+            "Author": "OpenAI Server Error",
+            "Author_Source": "",
+            "Description": "OpenAI Server Error",
+            "Image": "",
+            "Launch_URL": "",
+            "Key":""
+        }
+        print("convert place to dict error!")
         return result
 
 
@@ -66,12 +115,18 @@ def update_answer(sub_answer):
     answer = []
     try:
         for item in sub_answer['media']:
-            result = convert_to_dict(item)
+            result = convert_media_to_dict(item)
             if not result:
                 continue
             else:
                 answer.append(result)
             # txt_file.write(answer)
+        for item in sub_answer['place']:
+            result = convert_place_to_dict(item)
+            if not result:
+                continue
+            else:
+                answer.append(result)
         return answer
     except:
         print("updata answer error!")
@@ -82,12 +137,13 @@ def get_structured_answer(context: str):
     # Step 1: send the conversation and available functions to GPT
     start_time = time.time()
     instructor = f"""
-        Get the mentioned media information from the body of the input content.
-        You have to provide me all of the mentioned medias such as book, movie, article, poscast.
-        And then provide me detailed information about the category, author, title, description about each media with your knowledge.
-        You have to analyze below content carefully and then extract all medias mentioned in that content.
-        You shouldn't miss any one of the media such as book, movie, article, poscast.
+        Get the mentioned media and place information from the body of the input content.
+        You have to provide me all of the mentioned medias and places such as book, movie, article, poscast, attractions, restaurant, museum, hotel, Tourist destination.
+        And then provide me detailed information about the category, author(only for media), subtitle(only for place), title, description about each media and place with your knowledge.
+        You have to analyze below content carefully and then extract all medias and places mentioned in that content.
+        You shouldn't miss any one of the media and place such as book, movie, article, poscast, attractions, restaurant, museum, hotel, Tourist destination.
         But you should extract medias both title and author of which you know already.
+        And you should extract all places.
     """
     functions = [
         {
@@ -112,7 +168,7 @@ def get_structured_answer(context: str):
                                 },
                                 'Author': {
                                     'type': 'string',
-                                    'description': "This item can't contain the content of not specified or not mentioned but only exact name of Author for this media. Don't say unknown or you don't know it. You must come up with it with your own knowledge if author of which is not mentioned in the input context. If you don't know the exact author, you should print 'unknown'. In short, you should not print out that you do not know the exact title. In that case, print 'unknown'."
+                                    'description': "In case of movie please provide any director or creator. Don't say you don't know it. You must come up with it with your own knowledge if author of which is not mentioned in the input context. If you don't know the exact author, you should print 'unknown'. In short, you should not print out that you do not know the exact title. In that case, print 'unknown'."
                                 },
                                 'Description': {
                                     'type': 'string',
@@ -121,8 +177,33 @@ def get_structured_answer(context: str):
 
                             }
                         }
-                    }
+                    },
+                    "place": {
+                        'type': 'array',
+                        'description': "Extract all of the mentioned places such as retaurant, hotel, museum, Tourist destination in the body of the input text and description about that with your knowledge.",
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'Category': {
+                                    'type': 'string',
+                                    'description': 'The most suitable category of the place. Such as retaurant, hotel, museum, Tourist destination and etc.'
+                                },
+                                'Title': {
+                                    'type': 'string',
+                                    'description': "This item can't contain the content of not specified or not mentioned but only exact name for this place. But don't say unknown or you don't know it. You must come up with it with your own knowledge only if title of which is not mentioned in the input context. If you don't know the exact title, you should print 'unknown'. In short, you should not print out that you do not know the exact name. In that case, print 'unknown'."
+                                },
+                                'Subtitle': {
+                                    'type': 'string',
+                                    'description': "Suitable subtitle of given place such as simple introduction. For example, for the hotel, it can be 5-star tourist hotel and for restaurant, it can be Haute French restaurant."
+                                },
+                                'Description': {
+                                    'type': 'string',
+                                    'description': "Detailed description about each place mentioned in input text. This item must contain detailed description about each place. Output as much as possible with your own knowledge as well as body of above text."
+                                },
 
+                            }
+                        }
+                    }
                 }
 
             }
@@ -140,7 +221,7 @@ def get_structured_answer(context: str):
                 {'role': 'user', 'content': f"""
                     This is the input content you have to analyze.
                     {context}
-                    Please provide me the data about medias such as books, movies, articles, podcasts mentioned above.
+                    Please provide me the data about places and medias such as books, movies, articles, podcasts, attractions, restaurant, hotel, museum,  mentioned above.
                 """}
             ],
             functions=functions,
@@ -172,6 +253,7 @@ def extract_data(context: str):
     sub_len = 74000
     current = 0
     result = ""
+    time_init = time.time()
     while current < length:
         start_time = time.time()
         start = max(0, current - 50)
@@ -180,14 +262,16 @@ def extract_data(context: str):
         subtext = context[start: end]
         # print(subtext)
         instructor = f"""
-            This is context from with you have to analyze and extract information about medias.
+            This is context from with you have to analyze and extract information about medias, places.
             {subtext}
-            Please analyze above context carefully and then extract information about medias such as book, movie, article, podcast that are mentioned in the context in detail.
-            Please output the data as much as possible with your own knowledge focusing on category, author, title, description.
-            But you should output only the medias whose title was mentioned in the given context.
+            Please analyze above context carefully and then extract information about medias and places such as book, movie, article, podcast and places such as attractions, restaurant, bar, museum, Tourist destination etc that are mentioned in the context in detail.
+            Please output the data as much as possible with your own knowledge focusing on category, title, author, subtitle, description.
+            Don't output subtitle for medias.
+            Don't output author for places.
+            But you should output only the medias and places whose title was mentioned in the given context.
             And If you don't know the exact name of author of extracted media, you should output as 'unknown'.
-            When you output description about each media, please output as much as possible with several sentence about that media.
-            Please check each sentence one by one so that you can extract all books, movies, articles, podcasts discussed or mentioned or said by someone in the context above.        
+            When you output description about each media and place, please output as much as possible with several sentence about that media and place.
+            Please check each sentence one by one so that you can extract all books, movies, articles, podcasts, attractions, restaurant, museum, hotel, Tourist destination, attractions, etc discussed or mentioned or said by someone in the context above.        
         """
 
         print("tiktoken_len: ", tiktoken_len(instructor), '\n')
@@ -198,7 +282,7 @@ def extract_data(context: str):
                 messages=[
                     {'role': 'system', 'content': instructor},
                     {'role': 'user', 'content': f"""
-                        Please provide me extracted data about books, movies, articles, podcasts mentioned above.
+                        Please provide me extracted data about books, movies, articles, podcasts, attractions, restaurant, museum, hotel, Tourist destination mentioned above.
                         Output one by one as a list looks like below format.
 
                         --------------------------------
@@ -213,11 +297,21 @@ def extract_data(context: str):
                         Title: unknown
                         Author: unknown
                         Description: This particular episode on Dr. Andrew Huberman's podcast is not specified, but he mentions having various guests on.
-
-                        Movie:
+                        
+                        Category: Movie
                         Title: "Mad Men".
                         Author: unknown
                         Description: This is an American period drama television series. The series ran on the cable network AMC from 2007 to 2015, consisting of seven seasons and 92 episodes. Its main character, Don Draper, is a talented advertising executive with a mysterious past. This is the character with whom Rob Dyrdek identified himself in the context.
+                        
+                        Category: Museums
+                        Title: Louvre Museum
+                        Subtitle: Museum in Paris, France
+                        Description: The Louvre, or the Louvre Museum, is a national art museum in Paris, France
+                        
+                        Category: Attractions
+                        Title: Eiffel Tower
+                        Subtitle: Tower in Paris, France
+                        Description: The Eiffel Tower is a wrought-iron lattice tower on the Champ de Mars in Paris, France.
                         ...
                     """}
                 ],
@@ -233,6 +327,9 @@ def extract_data(context: str):
             # print("extract data error!")
             print(e)
             current = max(0, current - sub_len)
+            current_time = time.time()
+            if current_time - time_init > 600:
+                return result
             time.sleep(60)
             continue
     return result

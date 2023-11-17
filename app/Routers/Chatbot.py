@@ -27,6 +27,7 @@ def extract_mentioned_data(url: str = Form(...)):
     title = get_title_from_youtube(video_id)
     functions = [get_transcript_from_youtube, extract_data, complete_profile]
     result = pipeline(video_id, functions)
+    result['media'] = sorted(result['media'], key=lambda x: x['Category'])
     result['title'] = title
     result['url'] = url
     current_category = "---"
