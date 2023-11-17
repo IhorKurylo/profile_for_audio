@@ -28,7 +28,7 @@ def check_media(item):
         return True
 
 def check_place(item):
-    if ('Title' not in item) or ('Subtitle' not in item) or ('Description' not in item) or ('Category' not in item):
+    if ('Title' not in item) or ('Subtitle' not in item) or ('Category' not in item):
         return False
     else:
         return True
@@ -82,13 +82,16 @@ def convert_place_to_dict(item):
         subtitle = get_source_url(item["Category"] + ' ' + item["Subtitle"])
         image = get_image_url(item["Category"] + ' ' + item["Title"])
         map_image = get_map_image_url(item["Category"] + ' ' + item["Title"])
+        description = ""
+        if 'Description' in item:
+            description = item['Description']
         result = {
             "Category": item["Category"],
             "Title": item["Title"],
             "Title_Source": title,
             "Author": item["Subtitle"],
             "Author_Source": title,
-            "Description": item['Description'],
+            "Description": description,
             "Image": image,
             "Launch_URL": map_image,
             "Key": 'Subtitle'
@@ -267,7 +270,8 @@ def extract_data(context: str):
             Please output the data as much as possible with your own knowledge focusing on category, title, author, subtitle, description.
             Don't output subtitle for medias.
             Don't output author for places.
-            But you should output subtitle for places.
+            But you should output subtitle, description for places.
+            And you should output author, description for medias.
             But you should output only the medias and places whose title was mentioned in the given context.
             And If you don't know the exact name of author of extracted media, you should output as 'unknown'.
             When you output description about each media and place, please output as much as possible with several sentence about that media and place.
