@@ -194,13 +194,12 @@ def get_structured_answer(context: str):
                                 },
                                 'Subtitle': {
                                     'type': 'string',
-                                    'description': "Suitable subtitle of given place such as simple introduction. For example, for the hotel, it can be 5-star tourist hotel and for restaurant, it can be Haute French restaurant."
+                                    'description': "Suitable subtitle of given place such as simple introduction. If this subtitle doesn't mentioned in the input, you should create with your knowledge. For example, for the hotel, it can be 5-star tourist hotel and for restaurant, it can be Haute French restaurant."
                                 },
                                 'Description': {
                                     'type': 'string',
                                     'description': "Detailed description about each place mentioned in input text. This item must contain detailed description about each place. Output as much as possible with your own knowledge as well as body of above text."
                                 },
-
                             }
                         }
                     }
@@ -248,7 +247,7 @@ def get_structured_answer(context: str):
 
 def extract_data(context: str):
     global transcript
-    transcript = context[:300]
+    transcript = context[:100]
     length = len(context)
     sub_len = 74000
     current = 0
@@ -268,6 +267,7 @@ def extract_data(context: str):
             Please output the data as much as possible with your own knowledge focusing on category, title, author, subtitle, description.
             Don't output subtitle for medias.
             Don't output author for places.
+            But you should output subtitle for places.
             But you should output only the medias and places whose title was mentioned in the given context.
             And If you don't know the exact name of author of extracted media, you should output as 'unknown'.
             When you output description about each media and place, please output as much as possible with several sentence about that media and place.

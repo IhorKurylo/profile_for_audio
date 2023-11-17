@@ -68,7 +68,6 @@ def get_map_image_url(serach_term):
             }
             search = GoogleSearch(params)
             results = search.get_dict()
-            # print(results['search_metadata']['google_maps_url'])
             return results['search_metadata']['google_maps_url']
         else:
             print("No place results found.")
