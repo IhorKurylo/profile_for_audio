@@ -1,3 +1,4 @@
+from serpapi import GoogleSearch
 import requests
 import json
 import os
