@@ -53,7 +53,7 @@ def get_map_image_url(serach_term):
         }
         search = GoogleSearch(params)
         results = search.get_dict()
-        print("result: ", result)
+        print("result: ", results)
         first_place = results.get('place_results')
         if not first_place:
             first_place = results.get('local_results')[0]
