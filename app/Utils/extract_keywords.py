@@ -78,8 +78,8 @@ def convert_place_to_dict(item):
         if "unknown" in (item["Title"].lower()) or "unknown" in (item["Subtitle"].lower()):
             return {}
 
-        title = get_source_url(item["Category"] + ' ' + item["Title"])
-        subtitle = get_source_url(item["Category"] + ' ' + item["Subtitle"])
+        # title = get_source_url(item["Category"] + ' ' + item["Title"])
+        # subtitle = get_source_url(item["Category"] + ' ' + item["Subtitle"])
         image = get_image_url(item["Category"] + ' ' + item["Title"])
         map_image = get_map_image_url(item["Category"] + ' ' + item["Title"])
         description = ""
@@ -88,9 +88,9 @@ def convert_place_to_dict(item):
         result = {
             "Category": item["Category"],
             "Title": item["Title"],
-            "Title_Source": title,
+            "Title_Source": map_image,
             "Author": item["Subtitle"],
-            "Author_Source": title,
+            "Author_Source": map_image,
             "Description": description,
             "Image": image,
             "Launch_URL": map_image,
