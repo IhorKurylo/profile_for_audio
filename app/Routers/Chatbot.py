@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, Form, UploadFile, File
 from app.Utils.transcript import extract_video_id, get_transcript_from_youtube, get_title_from_youtube
 from app.Utils.extract_keywords import extract_data, complete_profile
 import time
@@ -40,3 +40,8 @@ def extract_mentioned_data(url: str = Form(...)):
     current_time = time.time()
     print("Total Time: ", current_time - start_time)
     return result
+
+
+@router.post("/transcript-audio-file")
+async def transcript_audio_file(file: UploadFile = File(...)):
+    print(file.filename)
