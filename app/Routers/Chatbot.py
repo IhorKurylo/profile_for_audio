@@ -27,15 +27,24 @@ def extract_mentioned_data(url: str = Form(...)):
     title = get_title_from_youtube(video_id)
     functions = [get_transcript_from_youtube, extract_data, complete_profile]
     result = pipeline(video_id, functions)
-    result['media'] = sorted(result['media'], key=lambda x: x['Category'])
+    if 'media' in result:
+        result['media'] = sorted(result['media'], key=lambda x: x['Category'])
+        current_category = "---"
+        for item in result['media']:
+            if item["Category"] == current_category:
+                item["Category"] = ""
+            else:
+                current_category = item["Category"]
+    if 'place' in result:
+        result['place'] = sorted(result['place'], key=lambda x: x['Category'])
+        current_category = "---"
+        for item in result['place']:
+            if item["Category"] == current_category:
+                item["Category"] = ""
+            else:
+                current_category = item["Category"]
     result['title'] = title
     result['url'] = url
-    current_category = "---"
-    for item in result['media']:
-        if item["Category"] == current_category:
-            item["Category"] = ""
-        else:
-            current_category = item["Category"]
 
     current_time = time.time()
     print("Total Time: ", current_time - start_time)
