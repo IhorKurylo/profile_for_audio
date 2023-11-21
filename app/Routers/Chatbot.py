@@ -45,4 +45,4 @@ def extract_mentioned_data(url: str = Form(...)):
 @router.post("/transcript-audio-file")
 async def transcript_audio_file(file: UploadFile = File(...)):
     print(file.filename)
-    return file.filename
+    return file.filename + "- goldrace"
