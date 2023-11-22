@@ -35,14 +35,6 @@ def extract_mentioned_data(url: str = Form(...)):
                 item["Category"] = ""
             else:
                 current_category = item["Category"]
-    if 'place' in result:
-        result['place'] = sorted(result['place'], key=lambda x: x['Category'])
-        current_category = "---"
-        for item in result['place']:
-            if item["Category"] == current_category:
-                item["Category"] = ""
-            else:
-                current_category = item["Category"]
     result['title'] = title
     result['url'] = url
 
