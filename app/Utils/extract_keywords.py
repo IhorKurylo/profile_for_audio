@@ -37,9 +37,12 @@ def convert_media_to_dict(item):
     try:
         if not check_media(item):
             return {}
-        if "unknown" in (item["Title"].lower()) or "unknown" in (item["Author"].lower()):
+        if "unknown" in (item["Title"].lower()):
             return {}
 
+        if "unknown" in (item["Author"].lower()):
+            item["Author"] = ""
+        
         title = get_source_url(item["Title"])
         author = get_source_url(item["Author"])
         image = get_image_url(item["Title"])
@@ -75,11 +78,11 @@ def convert_place_to_dict(item):
     try:
         if not check_place(item):
             return {}
-        if "unknown" in (item["Title"].lower()) or "unknown" in (item["Subtitle"].lower()):
+        if "unknown" in (item["Title"].lower()):
             return {}
 
-        # title = get_source_url(item["Category"] + ' ' + item["Title"])
-        # subtitle = get_source_url(item["Category"] + ' ' + item["Subtitle"])
+        if "unknown" in (item["Subtitle"].lower()):
+            item["Subtitle"] = ""
         image = get_image_url(item["Category"] + ' ' + item["Title"])
         map_image = get_map_image_url(item["Category"] + ' ' + item["Title"])
         description = ""
