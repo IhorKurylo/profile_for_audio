@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Form, UploadFile, File
 from app.Utils.transcript import extract_video_id, get_transcript_from_youtube, get_title_from_youtube
 from app.Utils.extract_keywords import extract_data, complete_profile
+from app.Models.Chatbot_Model import check_already_searched, insert_url_database
 import time
 
 router = APIRouter()
@@ -18,6 +19,11 @@ def extract_mentioned_data(url: str = Form(...)):
     print(url)
     if url == "":
         return {}
+    search_result = check_already_searched(url)
+    print(search_result)
+    if search_result != None:
+        return search_result
+        
     print("start")
     start_time = time.time()
     video_id = extract_video_id(url)
@@ -37,9 +43,11 @@ def extract_mentioned_data(url: str = Form(...)):
                 current_category = item["Category"]
     result['title'] = title
     result['url'] = url
+    result['share_link'] = f"https://recc.ooo/list02ProductsShare?url={url}"
 
     current_time = time.time()
     print("Total Time: ", current_time - start_time)
+    insert_url_database(url, result)
     return result
 
 
