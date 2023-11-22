@@ -120,22 +120,25 @@ def convert_place_to_dict(item):
 def update_answer(sub_answer):
     answer = []
     try:
-        for item in sub_answer['media']:
-            result = convert_media_to_dict(item)
-            if not result:
-                continue
-            else:
-                answer.append(result)
+        if 'media' in sub_answer:
+            for item in sub_answer['media']:
+                result = convert_media_to_dict(item)
+                if not result:
+                    continue
+                else:
+                    answer.append(result)
             # txt_file.write(answer)
-        for item in sub_answer['place']:
-            result = convert_place_to_dict(item)
-            if not result:
-                continue
-            else:
-                answer.append(result)
+        if 'place' in sub_answer:
+            for item in sub_answer['place']:
+                result = convert_place_to_dict(item)
+                if not result:
+                    continue
+                else:
+                    answer.append(result)
         return answer
-    except:
-        print("updata answer error!")
+    except Exception as e:
+        print(e)
+        print("update answer error!")
         return []
 
 
