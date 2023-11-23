@@ -54,9 +54,10 @@ def get_title_from_youtube(video_id: str):
 
 
 def get_transcript_from_youtube(video_id: str):
-    nltk.download('punkt')
+    # nltk.download('punkt')
     transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
     transcript = ' '.join([segment['text'] for segment in transcript_list])
+    print(transcript)
     sentences = nltk.sent_tokenize(transcript)
     context = ""
     # with open("./data/script.txt", "w") as txt_file:
