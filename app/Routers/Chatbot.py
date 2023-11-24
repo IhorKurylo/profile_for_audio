@@ -19,9 +19,9 @@ def extract_mentioned_data(url: str = Form(...)):
     print(url)
     if url == "":
         return {}
-    # search_result = check_already_searched(url)
-    # if search_result != None:
-    #     return search_result
+    search_result = check_already_searched(url)
+    if search_result != None:
+        return search_result
         
     print("start")
     start_time = time.time()
@@ -46,7 +46,7 @@ def extract_mentioned_data(url: str = Form(...)):
 
     current_time = time.time()
     print("Total Time: ", current_time - start_time)
-    # insert_url_database(url, result)
+    insert_url_database(url, result)
     return result
 
 
