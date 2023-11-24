@@ -54,7 +54,7 @@ def convert_media_to_dict(item):
             "Author_Source": author,
             "Description": item['Description'],
             "Image": image,
-            "Launch_URL": image,
+            "Launch_URL": title,
             "Key": 'Author'
         }
         return result
