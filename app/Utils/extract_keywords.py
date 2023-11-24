@@ -22,13 +22,13 @@ def tiktoken_len(text):
 
 
 def check_media(item):
-    if ('Title' not in item) or ('Author' not in item) or ('Description' not in item) or ('Category' not in item):
+    if ('Title' not in item) or ('Category' not in item):
         return False
     else:
         return True
 
 def check_place(item):
-    if ('Title' not in item) or ('Subtitle' not in item) or ('Category' not in item):
+    if ('Title' not in item) or ('Category' not in item):
         return False
     else:
         return True
@@ -149,6 +149,8 @@ def get_structured_answer(context: str):
         Get the mentioned media and place information from the body of the input content.
         You have to provide me all of the mentioned medias and places such as book, movie, article, poscast, attractions, restaurant, museum, hotel, Tourist destination.
         And then provide me detailed information about the category, author(only for media), subtitle(only for place), title, description about each media and place with your knowledge.
+        Don't forget to output author and description for each media.
+        Don't forget to output subtitle and description for each media.
         You have to analyze below content carefully and then extract all medias and places mentioned in that content.
         You shouldn't miss any one of the media and place such as book, movie, article, poscast, attractions, restaurant, museum, hotel, Tourist destination.
         But you should extract medias both title and author of which you know already.
@@ -163,7 +165,7 @@ def get_structured_answer(context: str):
                 'properties': {
                     "media": {
                         'type': 'array',
-                        'description': "Extract all of the mentioned medias such as book, movie, article, podcast in the body of the input text and description about that with your knowledge.",
+                        'description': "Extract all of the mentioned medias such as book, movie, article, podcast in the body of the input text and description about them with your knowledge. All items must have Category, Title, Author, Description properties.",
                         'items': {
                             'type': 'object',
                             'properties': {
@@ -189,7 +191,7 @@ def get_structured_answer(context: str):
                     },
                     "place": {
                         'type': 'array',
-                        'description': "Extract all of the mentioned places such as retaurant, hotel, museum, Tourist destination in the body of the input text and description about that with your knowledge.",
+                        'description': "Extract all of the mentioned places such as retaurant, hotel, museum, Tourist destination in the body of the input text and description about that with your knowledge.  All items must have Category, Title, Subtitle, Description properties.",
                         'items': {
                             'type': 'object',
                             'properties': {
