@@ -199,11 +199,11 @@ async def fetch_google_results(session, query, flag):
     if flag:
         params['searchType'] = 'image'
         params['num'] = 3
-    
+    print("fetch_start")
     try:
         async with session.get("https://www.googleapis.com/customsearch/v1", params=params) as response:
             results = await response.json()
-        # print("results: ", results)
+        print("results: ", results)
         # print("query: ", query, "  result: ", results['items'][0]['link'])
         if flag:
             google_image_result[query] = results['items'][0]['link']
