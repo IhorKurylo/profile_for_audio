@@ -356,6 +356,7 @@ async def get_structured_answer(context: str):
                     This is the input content you have to analyze.
                     {context}
                     Please provide me the data about places and medias such as books, movies, articles, podcasts, attractions, restaurant, hotel, museum,  mentioned above.
+                    Please output the data with your own knowledge focusing on category, title, author, subtitle.
                 """}
             ],
             functions=functions,
