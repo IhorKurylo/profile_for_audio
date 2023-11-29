@@ -53,7 +53,7 @@ def extract_mentioned_data(url: str = Form(...)):
 
     current_time = time.time()
     print("Total Time: ", current_time - start_time)
-    insert_url_database(url, result)
+    # insert_url_database(url, result)
     return result
 
 

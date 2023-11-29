@@ -5,7 +5,7 @@ URL_DB = db.urls
 
 def check_already_searched(url):
     try:
-        # URL_DB.delete_one({"url": url})
+        URL_DB.delete_one({"url": url})
         result = URL_DB.find_one({"url": url})
         if result == None:
             return result
