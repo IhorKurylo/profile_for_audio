@@ -60,9 +60,8 @@ def get_transcript_from_youtube(video_id: str):
     print(transcript)
     sentences = nltk.sent_tokenize(transcript)
     context = ""
-    # with open("./data/script.txt", "w") as txt_file:
-    for sentence in sentences:
-        # txt_file.write(sentence + '.\n')
-        context += sentence + '.\n'
-    
+    with open("./data/script.txt", "w") as txt_file:
+        for sentence in sentences:
+            txt_file.write(sentence + '.\n')
+            context += sentence + '.\n'
     return context

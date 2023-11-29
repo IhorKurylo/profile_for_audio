@@ -4,10 +4,6 @@ import json
 import tiktoken
 from dotenv import load_dotenv
 from openai import OpenAI
-import aiohttp
-import asyncio
-import os
-
 client = OpenAI()
 
 load_dotenv()
@@ -16,7 +12,7 @@ tokenizer = tiktoken.get_encoding('cl100k_base')
 
 transcript = ''
 
-substring_to_replace = "https://www.google.com/maps/place/"
+
 
 def tiktoken_len(text):
     tokens = tokenizer.encode(
@@ -55,9 +51,9 @@ def convert_media_to_dict(item):
         if "unknown" in (item["Author"].lower()):
             item["Author"] = ""
         
-        title = google_result[item["Title"]]
-        author = "" if item["Author"] == "" else google_result[item["Author"]]
-        image = google_image_result[item["Title"]]
+        title = get_source_url(item["Title"])
+        author = get_source_url(item["Author"])
+        image = get_image_url(item["Title"])
         result = {
             "Category": item["Category"],
             "Title": item["Title"],
@@ -92,7 +88,7 @@ def convert_place_to_dict(item):
             return {}
         
         if "Subtitle" not in item:
-            item["Subtitle"] = ""
+            item["Author"] = ""
         
         if "Description" not in item:
             item["Description"] = ""
@@ -102,8 +98,8 @@ def convert_place_to_dict(item):
 
         if "unknown" in (item["Subtitle"].lower()):
             item["Subtitle"] = ""
-        image = google_image_result[item["Category"] + ' ' + item["Title"]]
-        map_image = serp_result[item["Category"] + ' ' + item["Title"]]
+        image = get_image_url(item["Category"] + ' ' + item["Title"])
+        map_image = get_map_image_url(item["Category"] + ' ' + item["Title"])
         result = {
             "Category": item["Category"],
             "Title": item["Title"],
@@ -132,118 +128,10 @@ def convert_place_to_dict(item):
         print("convert place to dict error!")
         return result
 
-serp_list = []
-serp_result = {}
-google_list = []
-google_image_list = []
-google_result = {}
-google_image_result = {}
-def insert_item_to_serp_list(item):
-    if check_place(item):
-        serp_list.append(item["Category"] + ' ' + item["Title"])
-        google_image_list.append(item["Category"] + ' ' + item["Title"])
-    
-def insert_item_to_google_list(item):
-    if check_media(item):
-        google_list.append(item["Title"])
-        if "Author" in item:
-            google_list.append(item["Author"])
-        google_image_list.append(item["Title"])
-        
-        
-async def fetch_serp_results(session, query):
-    
-    params = {
-        'api_key': os.getenv("SERP_API_KEY"),      # your serpapi api key: https://serpapi.com/manage-api-key
-        "engine": "google_maps",
-        "type": "search",  # from which device to parse data
-        'q': query, # search query
-    }
-    
-    async with session.get('https://serpapi.com/search.json', params=params) as response:
-        results = await response.json()
-    # print(results)
 
-    first_place = results.get('place_results')
-    if not first_place:
-        first_place = results.get('local_results')[0]
-    if 'gps_coordinates' in first_place:
-        lat = first_place['gps_coordinates']['latitude']
-        lng = first_place['gps_coordinates']['longitude']
-        data_id = first_place['data_id']
-        params = {
-            "engine": "google_maps",
-            "type": "place",
-            "data": f"!4m5!3m4!1s{data_id}!8m2!3d{lat}!4d{lng}",
-            "api_key": os.getenv("SERP_API_KEY")
-        }
-        
-        async with session.get('https://serpapi.com/search.json', params=params) as response:
-            results = await response.json()
-
-        map_url = results['search_metadata']['google_maps_url']
-        if substring_to_replace in map_url:
-            map_url = map_url.replace(substring_to_replace, substring_to_replace + f"@{lat},{lng},17z/")
-        serp_result[query] = map_url
-        print(serp_result[query])
-
-cx = os.getenv("CX_ID")
-# api_key = os.getenv("GOOGLE_API_KEY")
-
-async def fetch_google_results(session, query, flag):
-    params = {
-        'q': query,
-        'cx': cx,
-        'key': os.getenv("GOOGLE_API_KEY"),
-    }
-    if flag:
-        params['searchType'] = 'image'
-        params['num'] = 3
-    
-    try:
-        async with session.get("https://www.googleapis.com/customsearch/v1", params=params) as response:
-            results = await response.json()
-        # print("results: ", results)
-        # print("query: ", query, "  result: ", results['items'][0]['link'])
-        if flag:
-            google_image_result[query] = results['items'][0]['link']
-            # print("image: ", results['items'][0]['link'])
-        else:
-            google_result[query] = results['items'][0]['link']
-            # print("google: ", results['items'][0]['link'])
-    except:
-        if flag:
-            google_image_result[query] = "https://www.lifespanpodcast.com/content/images/2022/01/Welcome-Message-Title-Card-2.jpg"
-        else:
-            google_result[query] = "https://www.lifespanpodcast.com/content/images/2022/01/Welcome-Message-Title-Card-2.jpg"
-    
-async def get_all_url_for_profile():
-    print(len(google_list))
-    async with aiohttp.ClientSession() as session:
-        tasks = []
-        for query in serp_list:
-            task = asyncio.ensure_future(fetch_serp_results(session, query))
-            tasks.append(task)
-        for query in google_list:
-            task = asyncio.ensure_future(fetch_google_results(session, query, 0))
-            tasks.append(task)
-        for query in google_image_list:
-            task = asyncio.ensure_future(fetch_google_results(session, query, 1))
-            tasks.append(task)
-        results = await asyncio.gather(*tasks)
-        
-async def update_answer(sub_answer):
+def update_answer(sub_answer):
     answer = []
     try:
-        if 'media' in sub_answer:
-            for item in sub_answer['media']:
-                insert_item_to_google_list(item)
-        if 'place' in sub_answer:
-            for item in sub_answer['place']:
-                result = insert_item_to_serp_list(item)
-        
-        await get_all_url_for_profile()
-        print("here")
         if 'media' in sub_answer:
             for item in sub_answer['media']:
                 result = convert_media_to_dict(item)
@@ -251,6 +139,7 @@ async def update_answer(sub_answer):
                     continue
                 else:
                     answer.append(result)
+            # txt_file.write(answer)
         if 'place' in sub_answer:
             for item in sub_answer['place']:
                 result = convert_place_to_dict(item)
@@ -258,7 +147,6 @@ async def update_answer(sub_answer):
                     continue
                 else:
                     answer.append(result)
-        print(answer)
         return answer
     except Exception as e:
         print(e)
@@ -266,7 +154,7 @@ async def update_answer(sub_answer):
         return []
 
 
-async def get_structured_answer(context: str):
+def get_structured_answer(context: str):
     # Step 1: send the conversation and available functions to GPT
     start_time = time.time()
     instructor = f"""
@@ -305,10 +193,10 @@ async def get_structured_answer(context: str):
                                     'type': 'string',
                                     'description': "In case of movie please provide any director or creator. Don't say you don't know it. You must come up with it with your own knowledge if author of which is not mentioned in the input context. If you don't know the exact author, you should print 'unknown'. In short, you should not print out that you do not know the exact title. In that case, print 'unknown'."
                                 },
-                                # 'Description': {
-                                #     'type': 'string',
-                                #     'description': "Detailed description about each media mentioned in input text. This item must contain detailed description about each media. Output as much as possible with your own knowledge as well as body of above text."
-                                # },
+                                'Description': {
+                                    'type': 'string',
+                                    'description': "Detailed description about each media mentioned in input text. This item must contain detailed description about each media. Output as much as possible with your own knowledge as well as body of above text."
+                                },
 
                             }
                         }
@@ -331,10 +219,10 @@ async def get_structured_answer(context: str):
                                     'type': 'string',
                                     'description': "Suitable subtitle of given place such as simple introduction. If this subtitle doesn't mentioned in the input, you should create with your knowledge. For example, for the hotel, it can be 5-star tourist hotel and for restaurant, it can be Haute French restaurant."
                                 },
-                                # 'Description': {
-                                #     'type': 'string',
-                                #     'description': "Detailed description about each place mentioned in input text. This item must contain detailed description about each place. Output as much as possible with your own knowledge as well as body of above text."
-                                # },
+                                'Description': {
+                                    'type': 'string',
+                                    'description': "Detailed description about each place mentioned in input text. This item must contain detailed description about each place. Output as much as possible with your own knowledge as well as body of above text."
+                                },
                             }
                         }
                     }
@@ -365,27 +253,23 @@ async def get_structured_answer(context: str):
         current_time = time.time()
         print("Elapsed Time: ", current_time - start_time)
         if hasattr(response_message, "function_call"):
-            print("response_message: ",
-                  response_message.function_call.arguments)
+            # print("response_message: ",
+            #       response_message.function_call.arguments)
             json_response = json.loads(
                 response_message.function_call.arguments)
-            answer = await update_answer(json_response)
-
+            answer = update_answer(json_response)
+            # print("answer: ", answer)
             return {"transcript": transcript, "media": answer}
         else:
             print("function_call_error!\n")
             return {}
     except Exception as e:
         print(e)
-        print("hello")
         return {}
 
 
 def extract_data(context: str):
-    global transcript, serp_list, google_image_list, google_list
-    serp_list = []
-    google_image_list = []
-    google_list = []
+    global transcript
     transcript = context[:250]
     transcript += "..."
     length = len(context)
@@ -480,9 +364,8 @@ def extract_data(context: str):
     return result
 
 
-async def complete_profile(context: str):
+def complete_profile(context: str):
     print("context: ", context, '\n')
     print("---------------------------------------------------\n")
 
-    result = await get_structured_answer(context)
-    return result
+    return get_structured_answer(context)

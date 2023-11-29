@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Form, UploadFile, File
 from app.Utils.transcript import extract_video_id, get_transcript_from_youtube, get_title_from_youtube
-from app.Utils.extract_keywords import extract_data, complete_profile
+from app.Utils.extract_keywords import extract_data, complete_profile, update_answer
 from app.Models.Chatbot_Model import check_already_searched, insert_url_database
+from app.Utils.elevenlabs import text_to_speech
 import time
-
+import asyncio
+import os
+import shutil
 router = APIRouter()
 
 
@@ -22,16 +25,20 @@ def extract_mentioned_data(url: str = Form(...)):
     search_result = check_already_searched(url)
     if search_result != None:
         return search_result
-        
+
     print("start")
     start_time = time.time()
     video_id = extract_video_id(url)
     if (video_id == None):
         return {}
-    # print("video_id: ", video_id)
+
     title = get_title_from_youtube(video_id)
-    functions = [get_transcript_from_youtube, extract_data, complete_profile]
-    result = pipeline(video_id, functions)
+    transcript = get_transcript_from_youtube(video_id)
+    print(time.time() - start_time)
+
+    # content = extract_data(transcript)
+    result = asyncio.run(complete_profile(transcript))
+    print(result)
     if 'media' in result:
         result['media'] = sorted(result['media'], key=lambda x: x['Category'])
         current_category = "---"
@@ -52,5 +59,11 @@ def extract_mentioned_data(url: str = Form(...)):
 
 @router.post("/transcript-audio-file")
 async def transcript_audio_file(file: UploadFile = File(...)):
+    text_to_speech()
     print(file.filename)
+
+    UPLOAD_DIRECTORY = "./data"
+    file_location = os.path.join(UPLOAD_DIRECTORY, file.filename)
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
     return file.filename + " - goldrace"
