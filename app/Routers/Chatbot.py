@@ -40,7 +40,7 @@ def extract_mentioned_data(url: str = Form(...)):
     result = asyncio.run(complete_profile(transcript))
     print(result)
     if 'media' in result:
-        result['media'] = sorted(result['media'], key=lambda x: x['Category'])
+        # result['media'] = sorted(result['media'], key=lambda x: x['Category'])
         current_category = "---"
         for item in result['media']:
             if item["Category"] == current_category:
