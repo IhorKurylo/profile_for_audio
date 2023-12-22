@@ -6,6 +6,8 @@ import os
 import tiktoken
 from googleapiclient.discovery import build
 
+
+
 load_dotenv()
 tokenizer = tiktoken.get_encoding('cl100k_base')
 
@@ -21,7 +23,6 @@ def tiktoken_len(text):
 def extract_video_id(url):
     # Parse the URL
     parsed_url = urlparse(url)
-
     if parsed_url.netloc == 'youtu.be':
         # The video ID is the path itself for 'youtu.be' URLs
         return parsed_url.path[1:]
@@ -38,7 +39,6 @@ def extract_video_id(url):
     # Return None if no video ID could be extracted
     return None
 
-
 def get_title_from_youtube(video_id: str):
     api_key = os.getenv("YouTube_API_KEY")
     youtube = build('youtube', 'v3', developerKey=api_key)
@@ -49,7 +49,7 @@ def get_title_from_youtube(video_id: str):
     )
     response = request.execute()
     title = response['items'][0]['snippet']['title']
-    # print("title: ", title)
+    
     return title
 
 
@@ -57,7 +57,6 @@ def get_transcript_from_youtube(video_id: str):
     # nltk.download('punkt')
     transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
     transcript = ' '.join([segment['text'] for segment in transcript_list])
-    print(transcript)
     sentences = nltk.sent_tokenize(transcript)
     context = ""
     with open("./data/script.txt", "w") as txt_file:

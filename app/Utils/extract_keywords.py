@@ -3,7 +3,7 @@ import time
 import json
 import tiktoken
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 import aiohttp
 import asyncio
 import os
@@ -24,8 +24,7 @@ def tiktoken_len(text):
         disallowed_special=()
     )
     return len(tokens)
-
-
+   
 def check_media(item):
     if ('Title' not in item) or ('Category' not in item):
         return False
@@ -138,6 +137,7 @@ google_list = []
 google_image_list = []
 google_result = {}
 google_image_result = {}
+
 def insert_item_to_serp_list(item):
     if check_place(item):
         serp_list.append(item["Category"] + ' ' + item["Title"])
@@ -149,8 +149,7 @@ def insert_item_to_google_list(item):
         if "Author" in item:
             google_list.append(item["Author"])
         google_image_list.append(item["Title"])
-        
-        
+                
 async def fetch_serp_results(session, query):
     try:
         params = {
@@ -185,7 +184,7 @@ async def fetch_serp_results(session, query):
             if substring_to_replace in map_url:
                 map_url = map_url.replace(substring_to_replace, substring_to_replace + f"@{lat},{lng},17z/")
             serp_result[query] = map_url
-            print(serp_result[query])
+            #print(serp_result[query])
     except:
         serp_result[query] = "https://www.google.com/maps/place/Granite/@38.038073,-75.7687759,3z/data=!4m10!1m2!2m1!1sgranite+restaurant+paris!3m6!1s0x47e66f1a1fb579eb:0x265362fbe8c6f7b5!8m2!3d48.8610438!4d2.3419215!15sChhncmFuaXRlIHJlc3RhdXJhbnQgcGFyaXNaGiIYZ3Jhbml0ZSByZXN0YXVyYW50IHBhcmlzkgEXaGF1dGVfZnJlbmNoX3Jlc3RhdXJhbnSaASRDaGREU1VoTk1HOW5TMFZKUTBGblNVTlNYMk54VFRkM1JSQULgAQA!16s%2Fg%2F11ny2076x0?entry=ttu"
 
@@ -205,7 +204,7 @@ async def fetch_google_results(session, query, flag):
     try:
         async with session.get("https://www.googleapis.com/customsearch/v1", params=params) as response:
             results = await response.json()
-        print("results: ", results)
+        #print("results: ", results)
         # print("query: ", query, "  result: ", results['items'][0]['link'])
         if flag:
             google_image_result[query] = results['items'][0]['link']
@@ -260,39 +259,43 @@ async def update_answer(sub_answer):
                     continue
                 else:
                     answer.append(result)
-        print(answer)
+        #print(answer)
         return answer
     except Exception as e:
         print(e)
         print("update answer error!")
         return []
 
-
 async def get_structured_answer(context: str):
     # Step 1: send the conversation and available functions to GPT
     start_time = time.time()
+    # instructor = f"""
+    #     Get the mentioned media and place information from the body of the input content.
+    #     You have to provide me all of the mentioned medias and places such as book, movie, article, poscast, attractions, restaurant, museum, hotel, Tourist destination.
+    #     And then provide me detailed information about the category, author(only for media), subtitle(only for place), title, description about each media and place with your knowledge.
+    #     Don't forget to output author and description for each media.
+    #     Don't forget to output subtitle and description for each media.
+    #     You have to analyze below content carefully and then extract all medias and places mentioned in that content.
+    #     You shouldn't miss any one of the media and place such as book, movie, article, poscast, attractions, restaurant, museum, hotel, Tourist destination.
+    #     But you should extract medias both title and author of which you know already.
+    #     And you should extract all places.
+    # """
+
     instructor = f"""
-        Get the mentioned media and place information from the body of the input content.
-        You have to provide me all of the mentioned medias and places such as book, movie, article, poscast, attractions, restaurant, museum, hotel, Tourist destination.
-        And then provide me detailed information about the category, author(only for media), subtitle(only for place), title, description about each media and place with your knowledge.
-        Don't forget to output author and description for each media.
-        Don't forget to output subtitle and description for each media.
-        You have to analyze below content carefully and then extract all medias and places mentioned in that content.
-        You shouldn't miss any one of the media and place such as book, movie, article, poscast, attractions, restaurant, museum, hotel, Tourist destination.
-        But you should extract medias both title and author of which you know already.
-        And you should extract all places.
+        Get the media and places information from input content.
     """
     functions = [
         {
-            'name': 'extract_media_info',
+            'name': 'extract_info',
             'description': f"{instructor}",
             'parameters': {
                 'type': 'object',
                 'properties': {
                     "media": {
                         'type': 'array',
-                        'description': "Extract all of the mentioned medias such as book, movie, article, podcast in the body of the input text and description about them with your knowledge. All items must have Category, Title, Author, Description properties.",
-                        'items': {
+                        # 'description': "Extract all of the mentioned medias such as book, movie, article, podcast in the body of the input text and description about them with your knowledge. All items must have Category, Title, Author, Description properties.",
+                        'description': "Extract all of the mentioned media you find from the input content such as book, movie, article, podcast in the input text and description about them with your knowledge. Each item must have Category, Title, Author(only for media, neccessary), Description(perhaps it would be your knowledge) properties.",
+                        'items': { 
                             'type': 'object',
                             'properties': {
                                 'Category': {
@@ -301,33 +304,33 @@ async def get_structured_answer(context: str):
                                 },
                                 'Title': {
                                     'type': 'string',
-                                    'description': "This item can't contain the content of not specified or not mentioned but only exact name of title for this media. But don't say unknown or you don't know it. You must come up with it with your own knowledge only if title of which is not mentioned in the input context. If you don't know the exact title, you should print 'unknown'. In short, you should not print out that you do not know the exact title. In that case, print 'unknown'."
+                                    'description': "This item can't contain the content of not specified or not mentioned but only exact name of title for this media. You must come up with it with your own knowledge only if title of which is not mentioned in the input context. If you don't know the exact title, you should print 'unknown'."
                                 },
                                 'Author': {
                                     'type': 'string',
-                                    'description': "In case of movie please provide any director or creator. Don't say you don't know it. You must come up with it with your own knowledge if author of which is not mentioned in the input context. If you don't know the exact author, you should print 'unknown'. In short, you should not print out that you do not know the exact title. In that case, print 'unknown'."
+                                    'description': "In case of movie please provide any director or creator. Don't say you don't know it. You must come up with it with your own knowledge if author of which is not mentioned in the input context. If you don't know the exact author, you should find the Google search and extrach accurate author and if there is no result even in Google then print 'unknown'."
                                 },
                                 # 'Description': {
                                 #     'type': 'string',
                                 #     'description': "Detailed description about each media mentioned in input text. This item must contain detailed description about each media. Output as much as possible with your own knowledge as well as body of above text."
                                 # },
-
                             }
                         }
                     },
                     "place": {
                         'type': 'array',
-                        'description': "Extract all of the mentioned places such as retaurant, hotel, museum, Tourist destination in the body of the input text and description about that with your knowledge.  All items must have Category, Title, Subtitle, Description properties.",
+                        # 'description': "Extract all of the mentioned places such as retaurant, hotel, museum, Tourist destination in the body of the input text and description about that with your knowledge.  All items must have Category, Title, Subtitle, Description properties.",
+                        'description': "Extract all of the mentioned places you find from the input content such as retaurant, hotel, museum, Tourist destination in the body of the input content and description about them with your knowledge. Each item must have Category, Title, Subtitle, Description properties." ,
                         'items': {
                             'type': 'object',
                             'properties': {
                                 'Category': {
                                     'type': 'string',
-                                    'description': 'The most suitable category of the place. Such as retaurant, hotel, museum, Tourist destination and etc.'
+                                    'description': 'The most suitable category of the place. Such as retaurant, hotel, museum, Tourist destination and etc. '
                                 },
                                 'Title': {
                                     'type': 'string',
-                                    'description': "This item can't contain the content of not specified or not mentioned but only exact name for this place. But don't say unknown or you don't know it. You must come up with it with your own knowledge only if title of which is not mentioned in the input context. If you don't know the exact title, you should print 'unknown'. In short, you should not print out that you do not know the exact name. In that case, print 'unknown'."
+                                    'description': "This item can't contain the content of not specified or not mentioned but only exact name for this place. But don't say unknown or you don't know it. You must come up with it with your own knowledge only if title of which is not mentioned in the input context. If you don't know the exact title, you should print 'unknown'."
                                 },
                                 'Subtitle': {
                                     'type': 'string',
@@ -343,7 +346,7 @@ async def get_structured_answer(context: str):
                 }
 
             }
-        }
+        },
     ]
 
     print('here2')
@@ -354,24 +357,33 @@ async def get_structured_answer(context: str):
             max_tokens=2000,
             messages=[
                 {'role': 'system', 'content': instructor},
+                # {'role': 'user', 'content': f"""
+                #     This is the input content you have to analyze.
+                #     {context}
+                #     Please provide me the data about places and media such as books, movies, articles, podcasts, attractions, restaurant, hotel, museum,  mentioned above.
+                #     Please output the data with your own knowledge focusing on category, title, author, subtitle.
+                    
+                # """}
                 {'role': 'user', 'content': f"""
                     This is the input content you have to analyze.
-                    {context}
-                    Please provide me the data about places and medias such as books, movies, articles, podcasts, attractions, restaurant, hotel, museum,  mentioned above.
-                    Please output the data with your own knowledge focusing on category, title, author, subtitle.
+                    {context}                    
                 """}
             ],
+            seed=2425,
             functions=functions,
-            function_call={"name": "extract_media_info"}
+            function_call={"name": "extract_info"}
         )
         response_message = response.choices[0].message
+        system_fingerprint = response.system_fingerprint
+        print(system_fingerprint)
         current_time = time.time()
         print("Elapsed Time: ", current_time - start_time)
         if hasattr(response_message, "function_call"):
-            print("response_message: ",
-                  response_message.function_call.arguments)
+            # print("response_message: ",
+            #       response_message.function_call.arguments)
             json_response = json.loads(
                 response_message.function_call.arguments)
+            print(json_response)
             answer = await update_answer(json_response)
 
             return {"transcript": transcript, "media": answer}
@@ -383,109 +395,150 @@ async def get_structured_answer(context: str):
         print("hello")
         return {}
 
+async def get_structured_answer_not_functionCalling(context: str):
+    # Step 1: send the conversation and available functions to GPT
+    start_time = time.time()  
+    try:
+        response = client.chat.completions.create(
+            model='gpt-4-1106-preview',
+            max_tokens=2000,
+            messages=[
+                {'role': 'system', 'content': "Get the media and placef from the input content in json"},
+                {'role': 'user', 'content': f"""
+                    This is the input content you have to analyze.
+                    {context}""" +
+                    """
+                    Please extract the following information from the given text
+                    In the input, there will be medias such as books, movies, articles, podcasts, attractions and places such as restaurant, museum, hotel, Tourist destination, bars.
+                    For media, please output category, title, author, and description if some of properties(except description) are not mentioned in the input content, then come up with them using your knowledge. But description especially must be in the input content and should be the part of the input. If there are multiple options when the properties are not mentioned in the input content then select only one option and author should be the name.
+                    For place, please output category, title, subtitle, and one sentence description even if some of properties(except description) are not mentioned in the input content, then come up with them using your knowledge. But description especially must be in the input content and should be the part of the input If there are multiple options when the properties are not mentioned in the input content then select only one option.
+                    Sample output is below:
+                        {
+                            "media": [
+                                {"Category": "book", "Title": "Fight Club", "Author": "Chuck Palahniuk", "Description": "Abcdefefddd"},
+                                {"Category": "book", "Title": "How to Fight Anti-Semitism", "Author": "Bari Weiss", "Description": "Abcdefefddd"},
+                                {"Category": "book", "Title": "48 Laws of Power", "Author": "Robert Greene", "Description": "Abcdefefddd"},
+                                {"Category": "book", "Title": "Hold Me Tight", "Author": "Sue Johnson", "Description": "Abcdefefddd"}
+                            ],
+                            "place": [
+                                {"Category": "bookstore", "Title": "The Painted Porch", "Subtitle": "Historical bookstore in Bastrop, Texas", "Description": "This bookstore "}
+                            ]
+                        }
+                """}
+            ],
+            seed=2425,
+            temperature = 0.7,
+            response_format={"type": "json_object"}
+        )
+        response_message = response.choices[0].message.content
+        json_response = json.loads(response_message)
+        system_fingerprint = response.system_fingerprint
+        print("Elapsed Time: ", time.time() - start_time)
+        answer = await update_answer(json_response)
+        return {"transcript": transcript, "media": answer}
+    except Exception as e:
+        print(e)
+        print("hello")
+        return {}
 
-def extract_data(context: str):
-    global transcript, serp_list, google_image_list, google_list
-    serp_list = []
-    google_image_list = []
-    google_list = []
-    transcript = context[:250]
-    transcript += "..."
-    length = len(context)
-    sub_len = 74000
-    current = 0
-    result = ""
-    time_init = time.time()
+# def extract_data(context: str):
+#     global transcript, serp_list, google_image_list, google_list
+#     serp_list = []
+#     google_image_list = []
+#     google_list = []
+#     transcript = context[:250]
+#     transcript += "..."
+#     length = len(context)
+#     sub_len = 74000
+#     current = 0
+#     result = ""
+#     time_init = time.time()
 
-    while current < length:
-        start_time = time.time()
-        start = max(0, current - 50)
-        end = min(current + sub_len, length - 1)
-        current += sub_len
-        subtext = context[start: end]
-        instructor = f"""
-            This is context from with you have to analyze and extract information about medias, places.
-            {subtext}
-            Please analyze above context carefully and then extract information about medias and places such as book, movie, article, podcast and places such as attractions, restaurant, bar, museum, Tourist destination etc that are mentioned in the context in detail.
-            Please output the data as much as possible with your own knowledge focusing on category, title, author, subtitle, description.
-            Don't output subtitle for medias.
-            Don't output author for places.
-            But you should output subtitle, description for places.
-            And you should output author, description for medias.
-            But you should output only the medias and places whose title was mentioned in the given context.
-            And If you don't know the exact name of author of extracted media, you should output as 'unknown'.
-            When you output description about each media and place, please output as much as possible with several sentence about that media and place.
-            Please check each sentence one by one so that you can extract all books, movies, articles, podcasts, attractions, restaurant, museum, hotel, Tourist destination, attractions, etc discussed or mentioned or said by someone in the context above.        
-        """
+#     while current < length:
+#         start_time = time.time()
+#         start = max(0, current - 50)
+#         end = min(current + sub_len, length - 1)
+#         current += sub_len
+#         subtext = context[start: end]
+#         instructor = f"""
+#             This is context from with you have to analyze and extract information about medias, places.
+#             {subtext}
+#             Please analyze above context carefully and then extract information about medias and places such as book, movie, article, podcast and places such as attractions, restaurant, bar, museum, Tourist destination etc that are mentioned in the context in detail.
+#             Please output the data as much as possible with your own knowledge focusing on category, title, author, subtitle, description.
+#             Don't output subtitle for medias.
+#             Don't output author for places.
+#             But you should output subtitle, description for places.
+#             And you should output author, description for medias.
+#             But you should output only the medias and places whose title was mentioned in the given context.
+#             And If you don't know the exact name of author of extracted media, you should output as 'unknown'.
+#             When you output description about each media and place, please output as much as possible with several sentence about that media and place.
+#             Please check each sentence one by one so that you can extract all books, movies, articles, podcasts, attractions, restaurant, museum, hotel, Tourist destination, attractions, etc discussed or mentioned or said by someone in the context above.        
+#         """
         
-        print("tiktoken_len: ", tiktoken_len(instructor), '\n')
-        try:
-            response = client.chat.completions.create(
-                model='gpt-4-1106-preview',
-                max_tokens=2500,
-                messages=[
-                    {'role': 'system', 'content': instructor},
-                    {'role': 'user', 'content': f"""
-                        Please provide me extracted data about books, movies, articles, podcasts, attractions, restaurant, museum, hotel, Tourist destination mentioned above.
-                        Output one by one as a list looks like below format.
+#         #print("tiktoken_len: ", tiktoken_len(instructor), '\n')
+#         try:
+#             response = client.chat.completions.create(
+#                 model='gpt-4-1106-preview',
+#                 max_tokens=2500,
+#                 messages=[
+#                     {'role': 'system', 'content': instructor},
+#                     {'role': 'user', 'content': f"""
+#                         Please provide me extracted data about books, movies, articles, podcasts, attractions, restaurant, museum, hotel, Tourist destination mentioned above.
+#                         Output one by one as a list looks like below format.
 
-                        --------------------------------
-                        This is sample output format.
+#                         --------------------------------
+#                         This is sample output format.
 
-                        Category: Book
-                        Title: Stolen Focus
-                        Author: Johann Hari
-                        Description: This book by Johann Hari explores the issue of how our attention is being constantly stolen by various distractions. He delves into the impact of this on our capability to think and work efficiently and on fulfilling our lives. The author has conducted extensive research and interviews with experts in fields like technology, psychology, and neuroscience to support his findings.
+#                         Category: Book
+#                         Title: Stolen Focus
+#                         Author: Johann Hari
+#                         Description: This book by Johann Hari explores the issue of how our attention is being constantly stolen by various distractions. He delves into the impact of this on our capability to think and work efficiently and on fulfilling our lives. The author has conducted extensive research and interviews with experts in fields like technology, psychology, and neuroscience to support his findings.
 
-                        Category: Podcasts
-                        Title: unknown
-                        Author: unknown
-                        Description: This particular episode on Dr. Andrew Huberman's podcast is not specified, but he mentions having various guests on.
+#                         Category: Podcasts
+#                         Title: unknown
+#                         Author: unknown
+#                         Description: This particular episode on Dr. Andrew Huberman's podcast is not specified, but he mentions having various guests on.
                         
-                        Category: Movie
-                        Title: "Mad Men".
-                        Author: unknown
-                        Description: This is an American period drama television series. The series ran on the cable network AMC from 2007 to 2015, consisting of seven seasons and 92 episodes. Its main character, Don Draper, is a talented advertising executive with a mysterious past. This is the character with whom Rob Dyrdek identified himself in the context.
+#                         Category: Movie
+#                         Title: "Mad Men".
+#                         Author: unknown
+#                         Description: This is an American period drama television series. The series ran on the cable network AMC from 2007 to 2015, consisting of seven seasons and 92 episodes. Its main character, Don Draper, is a talented advertising executive with a mysterious past. This is the character with whom Rob Dyrdek identified himself in the context.
                         
-                        Category: Museums
-                        Title: Louvre Museum
-                        Subtitle: Museum in Paris, France
-                        Description: The Louvre, or the Louvre Museum, is a national art museum in Paris, France
+#                         Category: Museums
+#                         Title: Louvre Museum
+#                         Subtitle: Museum in Paris, France
+#                         Description: The Louvre, or the Louvre Museum, is a national art museum in Paris, France
                         
-                        Category: Attractions
-                        Title: Eiffel Tower
-                        Subtitle: Tower in Paris, France
-                        Description: The Eiffel Tower is a wrought-iron lattice tower on the Champ de Mars in Paris, France.
-                        ...
-                    """}
-                ],
-                # stream=True
-            )
+#                         Category: Attractions
+#                         Title: Eiffel Tower
+#                         Subtitle: Tower in Paris, France
+#                         Description: The Eiffel Tower is a wrought-iron lattice tower on the Champ de Mars in Paris, France.
+#                         ...
+#                     """}
+#                 ],
+#                 # stream=True
+#             )
             
             
-            result += response.choices[0].message.content + '\n'
-            current_time = time.time()
-            print("Elapsed time: ", current_time - start_time)
+#             result += response.choices[0].message.content + '\n'
+#             current_time = time.time()
+#             #print("Elapsed time: ", current_time - start_time)
 
-            delta_time = current_time - start_time
-            if current >= length:
-                if tiktoken_len(instructor + result) > 70000:
-                    time.sleep(max(0, 60-delta_time))
-        except Exception as e:
-            # print("extract data error!")
-            print(e)
-            current = max(0, current - sub_len)
-            current_time = time.time()
-            if current_time - time_init > 600:
-                return result
-            time.sleep(60)
-            continue
-    return result
-
+#             delta_time = current_time - start_time
+#             if current >= length:
+#                 if tiktoken_len(instructor + result) > 70000:
+#                     time.sleep(max(0, 60-delta_time))
+#         except Exception as e:
+#             print("extract data error!")
+#             print(e)
+#             current = max(0, current - sub_len)
+#             current_time = time.time()
+#             if current_time - time_init > 600:
+#                 return result
+#             time.sleep(60)
+#             continue
+#     return result
 
 async def complete_profile(context: str):
-    print("context: ", context, '\n')
-    print("---------------------------------------------------\n")
-
-    result = await get_structured_answer(context)
+    result = await get_structured_answer_not_functionCalling(context)
     return result
