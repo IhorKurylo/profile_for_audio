@@ -49,7 +49,6 @@ def get_title_from_youtube(video_id: str):
     )
     response = request.execute()
     title = response['items'][0]['snippet']['title']
-    
     return title
 
 

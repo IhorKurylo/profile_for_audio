@@ -7,7 +7,6 @@ import time
 import asyncio
 import os
 import shutil
-import youtube_dl
 router = APIRouter()
 
 
@@ -31,11 +30,11 @@ def extract_mentioned_data(url: str = Form(...)):
     start_time = time.time()
     video_id = extract_video_id(url)
     # video_author = extract_video_author(url)
-    with youtube_dl.YoutubeDL({}) as ydl:
-        video = ydl.extract_info(url, download=False)
-        # video_author = video.author
-        # title = video.title
-        print(video.get("uploader", None),  video.get("id", None), video.get("title", None))
+    # with youtube_dl.YoutubeDL({}) as ydl:
+    #     video = ydl.extract_info(url, download=False)
+    #     # video_author = video.author
+    #     # title = video.title
+    #     print(video.get("uploader", None),  video.get("id", None), video.get("title", None))
 
 
     if (video_id == None):
@@ -58,7 +57,7 @@ def extract_mentioned_data(url: str = Form(...)):
                 item["Category"] = ""
             else:
                 current_category = item["Category"]
-    result['author'] = video_author
+    #result['author'] = video_author
     result['title'] = title
     result['url'] = url
     result['share_link'] = f"https://recc.ooo/list02ProductsShare?url={url}"
