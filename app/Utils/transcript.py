@@ -40,15 +40,40 @@ def extract_video_id(url):
     return None
 
 def get_title_from_youtube(video_id: str):
-    api_key = os.getenv("YouTube_API_KEY")
-    youtube = build('youtube', 'v3', developerKey=api_key)
+    try:
+        api_key = os.getenv("YouTube_API_KEY")
+        youtube = build('youtube', 'v3', developerKey=api_key)
+        request = youtube.videos().list(
+            part="snippet",
+            id=video_id
+        )
+        response = request.execute()
+    # Check if 'items' key exists and has at least one item
+        if 'items' in response and response['items']:
+            # Check if 'snippet' key exists
+            if 'snippet' in response['items'][0]:
+                snippet = response['items'][0]['snippet']
+                # Check if 'title' key exists
+                if 'title' in snippet:
+                    title = snippet['title']
+                else:
+                    title=""
+                if 'channelTitle' in snippet:
+                    author = snippet['channelTitle']
+                else:
+                    author=""
+                if 'thumbnails' in snippet:    
+                    avatar_url = snippet['thumbnails']['default']['url']
+                else:
+                    avatar_url=""
+                return [title, author, avatar_url]
+            else:
+                return "Snippet not found in response."
+        else:
+            return "No items found in response."
 
-    request = youtube.videos().list(
-        part="snippet",
-        id=video_id
-    )
-    response = request.execute()
-    title = response['items'][0]['snippet']['title']
+    except Exception as e:
+        return f"Error: {str(e)}"
     return title
 
 

@@ -410,8 +410,8 @@ async def get_structured_answer_not_functionCalling(context: str):
                     """
                     Please extract the following information from the given text
                     In the input, there will be medias such as books, movies, articles, podcasts, attractions and places such as restaurant, museum, hotel, Tourist destination, bars.
-                    For media, please output category, title, author, and description if some of properties(except description) are not mentioned in the input content, then come up with them using your knowledge. But description especially must be in the input content and should be the part of the input. If there are multiple options when the properties are not mentioned in the input content then select only one option and author should be the name.
-                    For place, please output category, title, subtitle, and one sentence description even if some of properties(except description) are not mentioned in the input content, then come up with them using your knowledge. But description especially must be in the input content and should be the part of the input If there are multiple options when the properties are not mentioned in the input content then select only one option.
+                    For media, please output category, title, author, and description if some of properties are not mentioned in the input content, then come up with them using your knowledge. If there are multiple options when the properties are not mentioned in the input content then select only one option and author should be the name. But if the description especially must be in the input content and should be the part of the input, not your knowledge. 
+                    For place, please output category, title, subtitle, and one sentence description even if some of properties are not mentioned in the input content, then come up with them using your knowledge. But description especially must be in the input content and should be the part of the input, not your knowledge.
                     Sample output is below:
                         {
                             "media": [
@@ -432,6 +432,7 @@ async def get_structured_answer_not_functionCalling(context: str):
         )
         response_message = response.choices[0].message.content
         json_response = json.loads(response_message)
+        print(json_response)
         system_fingerprint = response.system_fingerprint
         print("Elapsed Time: ", time.time() - start_time)
         answer = await update_answer(json_response)

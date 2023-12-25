@@ -7,6 +7,7 @@ import time
 import asyncio
 import os
 import shutil
+import yt_dlp
 router = APIRouter()
 
 
@@ -36,11 +37,20 @@ def extract_mentioned_data(url: str = Form(...)):
     #     # title = video.title
     #     print(video.get("uploader", None),  video.get("id", None), video.get("title", None))
 
+    
+    # ydl = yt_dlp.YoutubeDL()
+    # info_dict = ydl.extract_info(url, download=False)
+    # print(info_dict.get('uploader', None), info_dict.get('id',None), info_dict.get('title', None))
+    # print(time.time() - start_time)
+
 
     if (video_id == None):
         return {}
-    
-    title = get_title_from_youtube(video_id)
+    data=[]
+    data = get_title_from_youtube(video_id)
+    title = data[0]
+    author = data[1]
+    avatar_url = data[2]
     print("Title Time: ", time.time() - start_time)
 
     transcript = get_transcript_from_youtube(video_id)
@@ -57,10 +67,11 @@ def extract_mentioned_data(url: str = Form(...)):
                 item["Category"] = ""
             else:
                 current_category = item["Category"]
-    #result['author'] = video_author
+    result['author'] = author
     result['title'] = title
-    result['url'] = url
-    result['share_link'] = f"https://recc.ooo/list02ProductsShare?url={url}"
+    result['avatar'] = avatar_url
+    #result['url'] = url
+    result['share_link'] = f"list02ProductsShare?url={url}"
 
     current_time = time.time()
     print("Total Time: ", current_time - start_time)
