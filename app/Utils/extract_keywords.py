@@ -46,6 +46,7 @@ def convert_media_to_dict(item):
             item["Author"] = ""
         
         if "Description" not in item:
+            
             item["Description"] = ""
             
         if "unknown" in (item["Title"].lower()):
@@ -412,13 +413,14 @@ async def get_structured_answer_not_functionCalling(context: str):
                     In the input, there will be medias such as books, movies, articles, podcasts, attractions and places such as restaurant, museum, hotel, Tourist destination, bars.
                     For media, please output category, title, author, and description if some of properties are not mentioned in the input content, then come up with them using your knowledge. If there are multiple options when the properties are not mentioned in the input content then select only one option and author should be the name. But if the description especially must be in the input content and should be the part of the input, not your knowledge. 
                     For place, please output category, title, subtitle, and one sentence description even if some of properties are not mentioned in the input content, then come up with them using your knowledge. But description especially must be in the input content and should be the part of the input, not your knowledge.
+                    If you can't find the title, subtitle(place only), and author(media only) then output 'unknown'
                     Sample output is below:
                         {
                             "media": [
                                 {"Category": "book", "Title": "Fight Club", "Author": "Chuck Palahniuk", "Description": "Abcdefefddd"},
-                                {"Category": "book", "Title": "How to Fight Anti-Semitism", "Author": "Bari Weiss", "Description": "Abcdefefddd"},
+                                {"Category": "book", "Title": "How to Fight Anti-Semitism", "Author": "unknown", "Description": "Abcdefefddd"},
                                 {"Category": "book", "Title": "48 Laws of Power", "Author": "Robert Greene", "Description": "Abcdefefddd"},
-                                {"Category": "book", "Title": "Hold Me Tight", "Author": "Sue Johnson", "Description": "Abcdefefddd"}
+                                {"Category": "book", "Title": "unknown ", "Author": "Sue Johnson", "Description": "Abcdefefddd"}
                             ],
                             "place": [
                                 {"Category": "bookstore", "Title": "The Painted Porch", "Subtitle": "Historical bookstore in Bastrop, Texas", "Description": "This bookstore "}
@@ -433,7 +435,7 @@ async def get_structured_answer_not_functionCalling(context: str):
         response_message = response.choices[0].message.content
         json_response = json.loads(response_message)
         print(json_response)
-        system_fingerprint = response.system_fingerprint
+        # system_fingerprint = response.system_fingerprint
         print("Elapsed Time: ", time.time() - start_time)
         answer = await update_answer(json_response)
         return {"transcript": transcript, "media": answer}
@@ -539,6 +541,7 @@ async def get_structured_answer_not_functionCalling(context: str):
 #             time.sleep(60)
 #             continue
 #     return result
+
 
 async def complete_profile(context: str):
     result = await get_structured_answer_not_functionCalling(context)

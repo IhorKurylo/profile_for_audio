@@ -7,7 +7,6 @@ import time
 import asyncio
 import os
 import shutil
-import yt_dlp
 router = APIRouter()
 
 
