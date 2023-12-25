@@ -69,7 +69,7 @@ def extract_mentioned_data(url: str = Form(...)):
     result['author'] = author
     result['title'] = title
     result['avatar'] = avatar_url
-    #result['url'] = url
+    result['url'] = url
     result['share_link'] = f"list02ProductsShare?url={url}"
 
     current_time = time.time()
