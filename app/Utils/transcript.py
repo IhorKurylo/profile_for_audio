@@ -76,7 +76,6 @@ def get_title_from_youtube(video_id: str):
         return f"Error: {str(e)}"
     return title
 
-
 def get_transcript_from_youtube(video_id: str):
     # nltk.download('punkt')
     transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
