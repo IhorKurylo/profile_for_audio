@@ -589,6 +589,7 @@ async def stream_media(context: str, constantResponse: str, url: str):
         "title": videoTitle,
         "author": videoUploader,
         "avatar": videoAvatarUrl,
+        "sharelink": f"list02ProductsShare?url={url}",
         "media": [],
         "place": [],
     }
