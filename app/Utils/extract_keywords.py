@@ -578,8 +578,6 @@ Sample output is below:
 # async def complete_profile(context: str, constantResponse: str, url: str):
     # result = await get_structured_answer_not_functionCalling(context)
 
-
-
 async def stream_media(context: str, constantResponse: str, url: str):
     [videoTitle, videoUploader, videoAvatarUrl] = constantResponse
     print("here")

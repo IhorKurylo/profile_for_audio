@@ -106,7 +106,7 @@ async def extract_mentioned_data(url: str = Form(...)):
         print(constantData)
         return ""
     else:
-        return StreamingResponse(stream_media(transcript, constantData, url), media_type="application/json")
+        return StreamingResponse(stream_media(transcript, constantData, url), media_type='text/event-stream')
     # result = asyncio.run(complete_profile(transcript))
     # #print(result)
     # if 'media' in result:
