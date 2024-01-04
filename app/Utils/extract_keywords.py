@@ -624,8 +624,9 @@ async def stream_media(context: str, constantResponse: str, url: str):
                     else:
                         item = await formatItem('place', ast.literal_eval(item_string))
                     if item not in response_data['place']:
-                        print(item)
-                        print(time.time()-t)
+                        # print(item)
+                        # print(time.time()-t)
                         t = time.time()
                         response_data["place"].append(item)
+                        print(json.dumps(response_data.copy()).encode("utf-8"))
                         yield json.dumps(response_data.copy()).encode("utf-8")  # Yield updated response
