@@ -610,10 +610,11 @@ async def stream_media(context: str, constantResponse: str, url: str):
                     else:
                         item = await formatItem('media', ast.literal_eval(item_string))
                     if item not in response_data['media']:
-                        print(item)
-                        print(time.time()-t)
+                        # print(item)
+                        # print(time.time()-t)
                         t = time.time()           
                         response_data["media"].append(item)
+                        print("1--", json.dumps(response_data.copy()).encode("utf-8"));
                         yield json.dumps(response_data.copy()).encode("utf-8")  # Yield updated response
                 else:
                     item_string = '[' + items_string.split('[')[-1].split(']')[0] + ']'
@@ -628,5 +629,5 @@ async def stream_media(context: str, constantResponse: str, url: str):
                         # print(time.time()-t)
                         t = time.time()
                         response_data["place"].append(item)
-                        print(json.dumps(response_data.copy()).encode("utf-8"))
+                        print("2--", json.dumps(response_data.copy()).encode("utf-8"))
                         yield json.dumps(response_data.copy()).encode("utf-8")  # Yield updated response
