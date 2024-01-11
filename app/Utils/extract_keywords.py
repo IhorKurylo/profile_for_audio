@@ -399,6 +399,7 @@ async def get_structured_answer(context: str):
 async def get_structured_answer_not_functionCalling(context: str):
     # Step 1: send the conversation and available functions to GPT
     start_time = time.time()  
+    print(tiktoken_len(context))
     try:
         response = client.chat.completions.create(
             model='gpt-4-1106-preview',
