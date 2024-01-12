@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 import app.Routers.Chatbot as Chatbot
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +15,7 @@ app.add_middleware(
 )
 app.include_router(Chatbot.router, tags=["chatbot"])
 
+app.mount("/static", StaticFiles(directory="./data"), name="static")
 
 @app.get("/", tags=["Root"])
 async def root():

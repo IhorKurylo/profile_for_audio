@@ -7,6 +7,8 @@ import time
 import asyncio
 import os
 import shutil
+import requests
+
 router = APIRouter()
 
 
@@ -20,15 +22,16 @@ def pipeline(value, functions):
 @router.post("/extract_mentioned_data")
 def extract_mentioned_data(url: str = Form(...)):
     print(url)
-    if url == "":
-        return {}
-    search_result = check_already_searched(url)
-    if search_result != None:
-        return search_result
+    # if url == "":
+    #     return {}
+    # search_result = check_already_searched(url)
+    # if search_result != None:
+    #     return search_result
 
     print("start")
     start_time = time.time()
     video_id = extract_video_id(url)
+
     # video_author = extract_video_author(url)
     # with youtube_dl.YoutubeDL({}) as ydl:
     #     video = ydl.extract_info(url, download=False)
@@ -68,13 +71,27 @@ def extract_mentioned_data(url: str = Form(...)):
                 current_category = item["Category"]
     result['author'] = author
     result['title'] = title
-    result['avatar'] = avatar_url
     result['url'] = url
     result['share_link'] = f"list02ProductsShare?url={url}"
 
+    # filename = "./data/avatar.jpg"
+    # r = requests.get(avatar_url, allow_redirections = true)
+    # open(filename, "wb").write(r.content)
+
+    with open('./data/avatar.jpg', 'wb') as handle:
+        response = requests.get(avatar_url, stream=True)
+        if not response.ok:
+            print(response)
+        for block in response.iter_content(1024):
+            if not block:
+                break
+            handle.write(block)
+
+    
+    result['avatar'] = 'https://api.recc.ooo/static/avatar.jpg'
     current_time = time.time()
     print("Total Time: ", current_time - start_time)
-    insert_url_database(url, result)
+    # insert_url_database(url, result)
     return result
 
 
