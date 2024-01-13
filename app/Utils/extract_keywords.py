@@ -102,7 +102,7 @@ def convert_place_to_dict(item):
 
         if "unknown" in (item["Subtitle"].lower()):
             item["Subtitle"] = ""
-        image = google_image_result[item["Category"] + ' ' + item["Title"]]
+        image = serp_image_result[item["Category"] + ' ' + item["Title"]]
         map_image = serp_result[item["Category"] + ' ' + item["Title"]]
         result = {
             "Category": item["Category"],
@@ -138,11 +138,11 @@ google_list = []
 google_image_list = []
 google_result = {}
 google_image_result = {}
+serp_image_result = {}
 
 def insert_item_to_serp_list(item):
     if check_place(item):
         serp_list.append(item["Category"] + ' ' + item["Title"])
-        google_image_list.append(item["Category"] + ' ' + item["Title"])
     
 def insert_item_to_google_list(item):
     if check_media(item):
@@ -159,7 +159,7 @@ async def fetch_serp_results(session, query):
             "type": "search",  # from which device to parse data
             'q': query, # search query
         }
-        
+        print('fetch place')
         async with session.get('https://serpapi.com/search.json', params=params) as response:
             results = await response.json()
         # print(results)
@@ -180,11 +180,21 @@ async def fetch_serp_results(session, query):
             
             async with session.get('https://serpapi.com/search.json', params=params) as response:
                 results = await response.json()
-
             map_url = results['search_metadata']['google_maps_url']
             if substring_to_replace in map_url:
                 map_url = map_url.replace(substring_to_replace, substring_to_replace + f"@{lat},{lng},17z/")
             serp_result[query] = map_url
+
+            photo_params = {
+                "engine": "google_maps_photos",
+                "data_id": data_id,
+                "api_key": os.getenv("SERP_API_KEY")
+            }
+            async with session.get('https://serpapi.com/search.json', params=photo_params) as response:
+                results = await response.json()
+            photo_url = results['photos'][0]['image']
+            serp_image_result[query] = photo_url
+            print(serp_image_result[query])
             #print(serp_result[query])
     except:
         serp_result[query] = "https://www.google.com/maps/place/Granite/@38.038073,-75.7687759,3z/data=!4m10!1m2!2m1!1sgranite+restaurant+paris!3m6!1s0x47e66f1a1fb579eb:0x265362fbe8c6f7b5!8m2!3d48.8610438!4d2.3419215!15sChhncmFuaXRlIHJlc3RhdXJhbnQgcGFyaXNaGiIYZ3Jhbml0ZSByZXN0YXVyYW50IHBhcmlzkgEXaGF1dGVfZnJlbmNoX3Jlc3RhdXJhbnSaASRDaGREU1VoTk1HOW5TMFZKUTBGblNVTlNYMk54VFRkM1JSQULgAQA!16s%2Fg%2F11ny2076x0?entry=ttu"
@@ -201,7 +211,6 @@ async def fetch_google_results(session, query, flag):
     if flag:
         params['searchType'] = 'image'
         params['num'] = 3
-    print("fetch_start")
     try:
         async with session.get("https://www.googleapis.com/customsearch/v1", params=params) as response:
             results = await response.json()
