@@ -32,20 +32,6 @@ def extract_mentioned_data(url: str = Form(...)):
     start_time = time.time()
     video_id = extract_video_id(url)
 
-    # video_author = extract_video_author(url)
-    # with youtube_dl.YoutubeDL({}) as ydl:
-    #     video = ydl.extract_info(url, download=False)
-    #     # video_author = video.author
-    #     # title = video.title
-    #     print(video.get("uploader", None),  video.get("id", None), video.get("title", None))
-
-    
-    # ydl = yt_dlp.YoutubeDL()
-    # info_dict = ydl.extract_info(url, download=False)
-    # print(info_dict.get('uploader', None), info_dict.get('id',None), info_dict.get('title', None))
-    # print(time.time() - start_time)
-
-
     if (video_id == None):
         return {}
     data=[]
@@ -62,7 +48,6 @@ def extract_mentioned_data(url: str = Form(...)):
     result = asyncio.run(complete_profile(transcript))
     #print(result)
     if 'media' in result:
-        # result['media'] = sorted(result['media'], key=lambda x: x['Category'])
         current_category = "---"
         for item in result['media']:
             if item["Category"] == current_category:
@@ -73,10 +58,6 @@ def extract_mentioned_data(url: str = Form(...)):
     result['title'] = title
     result['url'] = url
     result['share_link'] = f"list02ProductsShare?url={url}"
-
-    # filename = "./data/avatar.jpg"
-    # r = requests.get(avatar_url, allow_redirections = true)
-    # open(filename, "wb").write(r.content)
 
     with open('./data/avatar.jpg', 'wb') as handle:
         response = requests.get(avatar_url, stream=True)

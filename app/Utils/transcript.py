@@ -19,7 +19,6 @@ def tiktoken_len(text):
     )
     return len(tokens)
 
-
 def extract_video_id(url):
     # Parse the URL
     parsed_url = urlparse(url)
@@ -75,7 +74,6 @@ def get_title_from_youtube(video_id: str):
     except Exception as e:
         return f"Error: {str(e)}"
     return title
-
 
 def get_transcript_from_youtube(video_id: str):
     # nltk.download('punkt')

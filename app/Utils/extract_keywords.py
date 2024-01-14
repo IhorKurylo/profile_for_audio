@@ -7,6 +7,7 @@ from openai import OpenAI, AsyncOpenAI
 import aiohttp
 import asyncio
 import os
+import requests
 
 client = OpenAI()
 
@@ -25,6 +26,16 @@ def tiktoken_len(text):
     )
     return len(tokens)
    
+def get_localImageURL(category, url, idx):
+    with open(f"./data/{category}_{idx}.jpg", 'wb') as handle:
+        response = requests.get(url, stream=True)
+        if not response.ok:
+            print(response)
+        for block in response.iter_content(1024):
+            if not block:
+                break
+            handle.write(block)
+
 def check_media(item):
     if ('Title' not in item) or ('Category' not in item):
         return False
@@ -37,11 +48,14 @@ def check_place(item):
     else:
         return True
 
-def convert_media_to_dict(item):
+def convert_media_to_dict(item, idx):
     try:
         if not check_media(item):
             return {}
         
+        title = google_result[item["Title"] + ' ' + item["Category"]]
+        get_localImageURL('media', google_image_result[item["Title"] + ' ' + item["Category"]], idx)
+
         if "Author" not in item:
             item["Author"] = ""
         
@@ -55,9 +69,8 @@ def convert_media_to_dict(item):
         if "unknown" in (item["Author"].lower()):
             item["Author"] = ""
         
-        title = google_result[item["Title"]]
-        author = "" if item["Author"] == "" else google_result[item["Author"]]
-        image = google_image_result[item["Title"]]
+        author = item["Author"]
+        image = f"https://api.recc.ooo/static/media_{idx}.jpg"
         result = {
             "Category": item["Category"],
             "Title": item["Title"],
@@ -134,11 +147,11 @@ def convert_place_to_dict(item):
 
 serp_list = []
 serp_result = {}
+serp_image_result = {}
 google_list = []
-google_image_list = []
+# google_image_list = []
 google_result = {}
 google_image_result = {}
-serp_image_result = {}
 
 def insert_item_to_serp_list(item):
     if check_place(item):
@@ -146,11 +159,8 @@ def insert_item_to_serp_list(item):
     
 def insert_item_to_google_list(item):
     if check_media(item):
-        google_list.append(item["Title"])
-        if "Author" in item:
-            google_list.append(item["Author"])
-        google_image_list.append(item["Title"])
-                
+        google_list.append(item["Title"] + ' ' + item["Category"])
+
 async def fetch_serp_results(session, query):
     try:
         params = {
@@ -214,20 +224,21 @@ async def fetch_google_results(session, query, flag):
     try:
         async with session.get("https://www.googleapis.com/customsearch/v1", params=params) as response:
             results = await response.json()
-        #print("results: ", results)
+        # print("results: ", results)
         # print("query: ", query, "  result: ", results['items'][0]['link'])
         if flag:
             google_image_result[query] = results['items'][0]['link']
             # print("image: ", results['items'][0]['link'])
         else:
             google_result[query] = results['items'][0]['link']
+            # print("results: ", results)
             # print("google: ", results['items'][0]['link'])
     except:
         if flag:
             google_image_result[query] = "https://www.lifespanpodcast.com/content/images/2022/01/Welcome-Message-Title-Card-2.jpg"
         else:
             google_result[query] = "https://www.lifespanpodcast.com/content/images/2022/01/Welcome-Message-Title-Card-2.jpg"
-    
+
 async def get_all_url_for_profile():
     print(len(google_list))
     async with aiohttp.ClientSession() as session:
@@ -238,7 +249,6 @@ async def get_all_url_for_profile():
         for query in google_list:
             task = asyncio.ensure_future(fetch_google_results(session, query, 0))
             tasks.append(task)
-        for query in google_image_list:
             task = asyncio.ensure_future(fetch_google_results(session, query, 1))
             tasks.append(task)
         results = await asyncio.gather(*tasks)
@@ -255,9 +265,10 @@ async def update_answer(sub_answer):
         
         await get_all_url_for_profile()
         print("here")
+        # print(google_result)
         if 'media' in sub_answer:
-            for item in sub_answer['media']:
-                result = convert_media_to_dict(item)
+            for index, item in enumerate(sub_answer['media']):
+                result = convert_media_to_dict(item, index)
                 if not result:
                     continue
                 else:
@@ -414,16 +425,27 @@ async def get_structured_answer_not_functionCalling(context: str):
             model='gpt-4-1106-preview',
             max_tokens=2000,
             messages=[
-                {'role': 'system', 'content': "Get the media and placef from the input content in json"},
+                {'role': 'system', 'content': "Get the 'media's and 'place's from the input content in json"},
                 {'role': 'user', 'content': f"""
                     This is the input content you have to analyze.
                     {context}""" +
                     """
-                    Please extract the following information from the given text
-                    In the input, there will be medias such as books, movies, articles, podcasts, attractions and places such as restaurant, museum, hotel, Tourist destination, bars.
-                    For media, please output category, title, author, and description if some of properties are not mentioned in the input content, then come up with them using your knowledge. If there are multiple options when the properties are not mentioned in the input content then select only one option and author should be the name. But if the description especially must be in the input content and should be the part of the input, not your knowledge. 
-                    For place, please output category, title, subtitle, and one sentence description even if some of properties are not mentioned in the input content, then come up with them using your knowledge. But description especially must be in the input content and should be the part of the input, not your knowledge.
-                    If you can't find the title, subtitle(place only), and author(media only) then output 'unknown'
+                    Please extract the following information from above text.
+                    In the input, there will be 'media's such as books, movies, articles, podcasts, attractions and places such as restaurant, museum, hotel, Tourist destination, bars.
+
+                    For media, please output category, title, author, and description.
+                    Don't forget that description must be in the input content and should be the part of the input, not your knowledge.
+                    Dont' forget that author must be the person's name and the most famous, only one person.
+                    Dont' forget if 1 or 2 of other 3 properties(category, title and author) are not mentioned in the input content, then you must come up with them using your knowledge.
+                    If you can't find property like title or category in your knowledge database, then you may output 'unknown' at this property.
+                    But don't forget that this must be specific exception, and in general case, you are not allowed to output 'unknown'.  
+                    
+                    For palce, please output category, title, subtitle, and only one sentence description.
+                    Don't forget that description must be in the input content and should be the part of the input, not your knowledge.
+                    Dont' forget if 1 or 2 of other 3 properties(category, title and subtitle) are not mentioned in the input content, then you must come up with them using your knowledge.
+                    If you can't find property like title or category in your knowledge database, then you may output 'unknown' at this property.
+                    But don't forget that this must be specific exception, and in general case, you are not allowed to output 'unknown'.  
+
                     Sample output is below:
                         {
                             "media": [
@@ -454,104 +476,103 @@ async def get_structured_answer_not_functionCalling(context: str):
         print("hello")
         return {}
 
-# def extract_data(context: str):
-#     global transcript, serp_list, google_image_list, google_list
-#     serp_list = []
-#     google_image_list = []
-#     google_list = []
-#     transcript = context[:250]
-#     transcript += "..."
-#     length = len(context)
-#     sub_len = 74000
-#     current = 0
-#     result = ""
-#     time_init = time.time()
+def extract_data(context: str):
+    global transcript, serp_list, google_image_list, google_list
+    serp_list = []
+    google_image_list = []
+    google_list = []
+    transcript = context[:250]
+    transcript += "..."
+    length = len(context)
+    sub_len = 74000
+    current = 0
+    result = ""
+    time_init = time.time()
 
-#     while current < length:
-#         start_time = time.time()
-#         start = max(0, current - 50)
-#         end = min(current + sub_len, length - 1)
-#         current += sub_len
-#         subtext = context[start: end]
-#         instructor = f"""
-#             This is context from with you have to analyze and extract information about medias, places.
-#             {subtext}
-#             Please analyze above context carefully and then extract information about medias and places such as book, movie, article, podcast and places such as attractions, restaurant, bar, museum, Tourist destination etc that are mentioned in the context in detail.
-#             Please output the data as much as possible with your own knowledge focusing on category, title, author, subtitle, description.
-#             Don't output subtitle for medias.
-#             Don't output author for places.
-#             But you should output subtitle, description for places.
-#             And you should output author, description for medias.
-#             But you should output only the medias and places whose title was mentioned in the given context.
-#             And If you don't know the exact name of author of extracted media, you should output as 'unknown'.
-#             When you output description about each media and place, please output as much as possible with several sentence about that media and place.
-#             Please check each sentence one by one so that you can extract all books, movies, articles, podcasts, attractions, restaurant, museum, hotel, Tourist destination, attractions, etc discussed or mentioned or said by someone in the context above.        
-#         """
+    while current < length:
+        start_time = time.time()
+        start = max(0, current - 50)
+        end = min(current + sub_len, length - 1)
+        current += sub_len
+        subtext = context[start: end]
+        instructor = f"""
+            This is context from with you have to analyze and extract information about medias, places.
+            {subtext}
+            Please analyze above context carefully and then extract information about medias and places such as book, movie, article, podcast and places such as attractions, restaurant, bar, museum, Tourist destination etc that are mentioned in the context in detail.
+            Please output the data as much as possible with your own knowledge focusing on category, title, author, subtitle, description.
+            Don't output subtitle for medias.
+            Don't output author for places.
+            But you should output subtitle, description for places.
+            And you should output author, description for medias.
+            But you should output only the medias and places whose title was mentioned in the given context.
+            And If you don't know the exact name of author of extracted media, you should output as 'unknown'.
+            When you output description about each media and place, please output as much as possible with several sentence about that media and place.
+            Please check each sentence one by one so that you can extract all books, movies, articles, podcasts, attractions, restaurant, museum, hotel, Tourist destination, attractions, etc discussed or mentioned or said by someone in the context above.        
+        """
         
-#         #print("tiktoken_len: ", tiktoken_len(instructor), '\n')
-#         try:
-#             response = client.chat.completions.create(
-#                 model='gpt-4-1106-preview',
-#                 max_tokens=2500,
-#                 messages=[
-#                     {'role': 'system', 'content': instructor},
-#                     {'role': 'user', 'content': f"""
-#                         Please provide me extracted data about books, movies, articles, podcasts, attractions, restaurant, museum, hotel, Tourist destination mentioned above.
-#                         Output one by one as a list looks like below format.
+        #print("tiktoken_len: ", tiktoken_len(instructor), '\n')
+        try:
+            response = client.chat.completions.create(
+                model='gpt-4-1106-preview',
+                max_tokens=2500,
+                messages=[
+                    {'role': 'system', 'content': instructor},
+                    {'role': 'user', 'content': f"""
+                        Please provide me extracted data about books, movies, articles, podcasts, attractions, restaurant, museum, hotel, Tourist destination mentioned above.
+                        Output one by one as a list looks like below format.
 
-#                         --------------------------------
-#                         This is sample output format.
+                        --------------------------------
+                        This is sample output format.
 
-#                         Category: Book
-#                         Title: Stolen Focus
-#                         Author: Johann Hari
-#                         Description: This book by Johann Hari explores the issue of how our attention is being constantly stolen by various distractions. He delves into the impact of this on our capability to think and work efficiently and on fulfilling our lives. The author has conducted extensive research and interviews with experts in fields like technology, psychology, and neuroscience to support his findings.
+                        Category: Book
+                        Title: Stolen Focus
+                        Author: Johann Hari
+                        Description: This book by Johann Hari explores the issue of how our attention is being constantly stolen by various distractions. He delves into the impact of this on our capability to think and work efficiently and on fulfilling our lives. The author has conducted extensive research and interviews with experts in fields like technology, psychology, and neuroscience to support his findings.
 
-#                         Category: Podcasts
-#                         Title: unknown
-#                         Author: unknown
-#                         Description: This particular episode on Dr. Andrew Huberman's podcast is not specified, but he mentions having various guests on.
+                        Category: Podcasts
+                        Title: unknown
+                        Author: unknown
+                        Description: This particular episode on Dr. Andrew Huberman's podcast is not specified, but he mentions having various guests on.
                         
-#                         Category: Movie
-#                         Title: "Mad Men".
-#                         Author: unknown
-#                         Description: This is an American period drama television series. The series ran on the cable network AMC from 2007 to 2015, consisting of seven seasons and 92 episodes. Its main character, Don Draper, is a talented advertising executive with a mysterious past. This is the character with whom Rob Dyrdek identified himself in the context.
+                        Category: Movie
+                        Title: "Mad Men".
+                        Author: unknown
+                        Description: This is an American period drama television series. The series ran on the cable network AMC from 2007 to 2015, consisting of seven seasons and 92 episodes. Its main character, Don Draper, is a talented advertising executive with a mysterious past. This is the character with whom Rob Dyrdek identified himself in the context.
                         
-#                         Category: Museums
-#                         Title: Louvre Museum
-#                         Subtitle: Museum in Paris, France
-#                         Description: The Louvre, or the Louvre Museum, is a national art museum in Paris, France
+                        Category: Museums
+                        Title: Louvre Museum
+                        Subtitle: Museum in Paris, France
+                        Description: The Louvre, or the Louvre Museum, is a national art museum in Paris, France
                         
-#                         Category: Attractions
-#                         Title: Eiffel Tower
-#                         Subtitle: Tower in Paris, France
-#                         Description: The Eiffel Tower is a wrought-iron lattice tower on the Champ de Mars in Paris, France.
-#                         ...
-#                     """}
-#                 ],
-#                 # stream=True
-#             )
+                        Category: Attractions
+                        Title: Eiffel Tower
+                        Subtitle: Tower in Paris, France
+                        Description: The Eiffel Tower is a wrought-iron lattice tower on the Champ de Mars in Paris, France.
+                        ...
+                    """}
+                ],
+                # stream=True
+            )
             
             
-#             result += response.choices[0].message.content + '\n'
-#             current_time = time.time()
-#             #print("Elapsed time: ", current_time - start_time)
+            result += response.choices[0].message.content + '\n'
+            current_time = time.time()
+            #print("Elapsed time: ", current_time - start_time)
 
-#             delta_time = current_time - start_time
-#             if current >= length:
-#                 if tiktoken_len(instructor + result) > 70000:
-#                     time.sleep(max(0, 60-delta_time))
-#         except Exception as e:
-#             print("extract data error!")
-#             print(e)
-#             current = max(0, current - sub_len)
-#             current_time = time.time()
-#             if current_time - time_init > 600:
-#                 return result
-#             time.sleep(60)
-#             continue
-#     return result
-
+            delta_time = current_time - start_time
+            if current >= length:
+                if tiktoken_len(instructor + result) > 70000:
+                    time.sleep(max(0, 60-delta_time))
+        except Exception as e:
+            print("extract data error!")
+            print(e)
+            current = max(0, current - sub_len)
+            current_time = time.time()
+            if current_time - time_init > 600:
+                return result
+            time.sleep(60)
+            continue
+    return result
 
 async def complete_profile(context: str):
     result = await get_structured_answer_not_functionCalling(context)
