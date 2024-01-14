@@ -28,7 +28,7 @@ def tiktoken_len(text):
    
 def get_localImageURL(category, url, idx):
     with open(f"./data/{category}_{idx}.jpg", 'wb') as handle:
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'})
         if not response.ok:
             print(response)
         for block in response.iter_content(1024):
@@ -53,12 +53,9 @@ def convert_media_to_dict(item, idx):
         if not check_media(item):
             return {}
         
-        title = google_result[item["Title"] + ' ' + item["Category"]]
-        get_localImageURL('media', google_image_result[item["Title"] + ' ' + item["Category"]], idx)
+        title = google_result[item["Category"] + ' ' + item["Title"]]
+        get_localImageURL('media', google_image_result[item["Category"] + ' ' + item["Title"]], idx)
 
-        if "Author" not in item:
-            item["Author"] = ""
-        
         if "Description" not in item:
             
             item["Description"] = ""
@@ -159,7 +156,7 @@ def insert_item_to_serp_list(item):
     
 def insert_item_to_google_list(item):
     if check_media(item):
-        google_list.append(item["Title"] + ' ' + item["Category"])
+        google_list.append(item["Category"] + ' ' + item["Title"])
 
 async def fetch_serp_results(session, query):
     try:
@@ -228,7 +225,7 @@ async def fetch_google_results(session, query, flag):
         # print("query: ", query, "  result: ", results['items'][0]['link'])
         if flag:
             google_image_result[query] = results['items'][0]['link']
-            # print("image: ", results['items'][0]['link'])
+            print("image: ", results['items'][0]['link'])
         else:
             google_result[query] = results['items'][0]['link']
             # print("results: ", results)
@@ -240,7 +237,7 @@ async def fetch_google_results(session, query, flag):
             google_result[query] = "https://www.lifespanpodcast.com/content/images/2022/01/Welcome-Message-Title-Card-2.jpg"
 
 async def get_all_url_for_profile():
-    print(len(google_list))
+    print(google_list)
     async with aiohttp.ClientSession() as session:
         tasks = []
         for query in serp_list:
@@ -434,25 +431,20 @@ async def get_structured_answer_not_functionCalling(context: str):
                     In the input, there will be 'media's such as books, movies, articles, podcasts, attractions and places such as restaurant, museum, hotel, Tourist destination, bars.
 
                     For media, please output category, title, author, and description.
-                    Don't forget that description must be in the input content and should be the part of the input, not your knowledge.
-                    Dont' forget that author must be the person's name and the most famous, only one person.
+                    Don't forget that description must be in the input content and should be the simple part(less than 50 words) of the input, not your knowledge.
+                    Dont' forget that author must be the person's name and the most famous, only one person and you should.
                     Dont' forget if 1 or 2 of other 3 properties(category, title and author) are not mentioned in the input content, then you must come up with them using your knowledge.
-                    If you can't find property like title or category in your knowledge database, then you may output 'unknown' at this property.
-                    But don't forget that this must be specific exception, and in general case, you are not allowed to output 'unknown'.  
+                    Dont' forget you must find title and author using your knowledge and must not output 'unknown'. It is illegal.
                     
-                    For palce, please output category, title, subtitle, and only one sentence description.
-                    Don't forget that description must be in the input content and should be the part of the input, not your knowledge.
-                    Dont' forget if 1 or 2 of other 3 properties(category, title and subtitle) are not mentioned in the input content, then you must come up with them using your knowledge.
-                    If you can't find property like title or category in your knowledge database, then you may output 'unknown' at this property.
-                    But don't forget that this must be specific exception, and in general case, you are not allowed to output 'unknown'.  
+                    For place, please output category, title, subtitle, and only one sentence description.
+                    Don't forget that description must be in the input content and should be the simple part(less than 50 words) of the input, not your knowledge.
+                    Dont' forget if 1 or 2 of other 3 properties(category, title and subtitle) are not mentioned in the input content, then you must come up with them using your knowledge.                 
+                    Dont' forget you must find title using your knowledge and must not output 'unknown'. It is illegal.
 
                     Sample output is below:
                         {
                             "media": [
-                                {"Category": "book", "Title": "Fight Club", "Author": "Chuck Palahniuk", "Description": "Abcdefefddd"},
-                                {"Category": "book", "Title": "How to Fight Anti-Semitism", "Author": "unknown", "Description": "Abcdefefddd"},
-                                {"Category": "book", "Title": "48 Laws of Power", "Author": "Robert Greene", "Description": "Abcdefefddd"},
-                                {"Category": "book", "Title": "unknown ", "Author": "Sue Johnson", "Description": "Abcdefefddd"}
+                                {"Category": "book", "Title": "Fight Club", "Author": "Chuck Palahniuk", "Description": "Abcdefefddd"}
                             ],
                             "place": [
                                 {"Category": "bookstore", "Title": "The Painted Porch", "Subtitle": "Historical bookstore in Bastrop, Texas", "Description": "This bookstore "}
