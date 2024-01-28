@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Form, UploadFile, File
+from fastapi import APIRouter, Form, UploadFile, File, Request
 from app.Utils.transcript import extract_video_id, get_transcript_from_youtube, get_title_from_youtube
-from app.Utils.extract_keywords import complete_profile, update_answer
+from app.Utils.extract_keywords_YouTube import complete_profile, update_answer
 from app.Models.Chatbot_Model import check_already_searched, insert_url_database
 from app.Utils.elevenlabs import text_to_speech
+from app.Utils.extract_text import complete_text
 import time
 import asyncio
 import os
@@ -43,7 +44,7 @@ def extract_mentioned_data(url: str = Form(...)):
 
     transcript = get_transcript_from_youtube(video_id)
     print(time.time() - start_time)
-    # print(transcript)
+    print(transcript)
     # content = extract_data(transcript)
     result = asyncio.run(complete_profile(transcript))
     #print(result)
@@ -74,6 +75,18 @@ def extract_mentioned_data(url: str = Form(...)):
     print("Total Time: ", current_time - start_time)
     # insert_url_database(url, result)
     return result
+
+
+
+@router.post("/extract_text_data")
+async def extract_text_data(request: Request):
+
+    start_time = time.time()
+    metadata_txt = await request.body()
+    print(time.time() - start_time)
+    result = await complete_text(metadata_txt.decode("utf-8"))
+    return result
+
 
 
 @router.post("/transcript-audio-file")
