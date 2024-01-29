@@ -235,7 +235,7 @@ def insert_item_to_google_list(item):
     google_list.append(item[0] + ' ' + item[1] + ' ' + item[2])
 
 async def update_answer(apiResponse):
-    answer = {'media': [], 'place': []}
+    answer = {'media': []}
     try:
         if 'media' in apiResponse:
             for item in apiResponse['media']:
@@ -253,14 +253,14 @@ async def update_answer(apiResponse):
                 if not result:
                     continue
                 else:
-                    answer.append(result)
+                    answer['media'].append(result)
         if 'place' in apiResponse:
             for item in apiResponse['place']:
                 result = convert_place_to_dict(item)
                 if not result:
                     continue
                 else:
-                    answer.append(result)
+                    answer['media'].append(result)
         return answer
     except Exception as e:
         print(e)
