@@ -27,6 +27,8 @@ def tiktoken_len(text):
     return len(tokens)
    
 def get_localImageURL(category, url, idx):
+    if not os.path.exists("./data/text"):
+        os.makedirs("./data/text")
     with open(f"./data/text/{category}_{idx}.jpg", 'wb') as handle:
         response = requests.get(url, stream=True, headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'})
         if not response.ok:
@@ -105,7 +107,7 @@ def convert_place_to_dict(item):
         result = {
             "Category": item[0],
             "Title": item[1],
-            "Subtitle": item[2],
+            "Author": item[2],
             "Description": item[3],
             "imgURL": image,
             "launchURL": map_image,
@@ -178,7 +180,7 @@ async def fetch_serp_results(session, query):
                 results = await response.json()
             photo_url = results['photos'][0]['image']
             serp_image_result[query] = photo_url
-            print(serp_image_result[query])
+            # print(serp_image_result[query])
             #print(serp_result[query])
     except:
         serp_result[query] = "https://www.google.com/maps/place/Granite/@38.038073,-75.7687759,3z/data=!4m10!1m2!2m1!1sgranite+restaurant+paris!3m6!1s0x47e66f1a1fb579eb:0x265362fbe8c6f7b5!8m2!3d48.8610438!4d2.3419215!15sChhncmFuaXRlIHJlc3RhdXJhbnQgcGFyaXNaGiIYZ3Jhbml0ZSByZXN0YXVyYW50IHBhcmlzkgEXaGF1dGVfZnJlbmNoX3Jlc3RhdXJhbnSaASRDaGREU1VoTk1HOW5TMFZKUTBGblNVTlNYMk54VFRkM1JSQULgAQA!16s%2Fg%2F11ny2076x0?entry=ttu"
@@ -251,14 +253,14 @@ async def update_answer(apiResponse):
                 if not result:
                     continue
                 else:
-                    answer['media'].append(result)
+                    answer.append(result)
         if 'place' in apiResponse:
             for item in apiResponse['place']:
                 result = convert_place_to_dict(item)
                 if not result:
                     continue
                 else:
-                    answer['place'].append(result)
+                    answer.append(result)
         return answer
     except Exception as e:
         print(e)

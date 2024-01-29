@@ -79,12 +79,10 @@ def extract_mentioned_data(url: str = Form(...)):
 
 
 @router.post("/extract_text_data")
-async def extract_text_data(request: Request):
-
+def extract_text_data(text: str = Form(...)):
     start_time = time.time()
-    metadata_txt = await request.body()
     print(time.time() - start_time)
-    result = await complete_text(metadata_txt.decode("utf-8"))
+    result = asyncio.run(complete_text(text))
     return result
 
 
