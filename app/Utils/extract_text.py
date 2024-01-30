@@ -59,7 +59,7 @@ def convert_media_to_dict(item, idx):
         get_localImageURL('media', google_image_result[item[0] + ' ' + item[1] + ' ' + item[2]], idx)
         
         author = item[2]
-        image = f"https://api.recc.ooo/data/text/media_{idx}.jpg"
+        image = f"https://api.recc.ooo/static/text/media_{idx}.jpg"
         result = {
             "Category": item[0],
             "Title": item[1],
