@@ -59,10 +59,9 @@ def convert_media_to_dict(item, idx):
     try:
         # if not check_media(item):
         #     return {}
-        
-        title = google_result[item[0] + ' ' + item[1] + ' ' + item[2]]
-        get_localImageURL('media', google_image_result[item[0] + ' ' + item[1] + ' ' + item[2]], idx)
-        author = item[2]
+        title = google_result[item[0] + ' ' + item[1]]
+        get_localImageURL('media', google_image_result[item[0] + ' ' + item[1]], idx)
+        author = google_author_result[item[0] + ' '+ item[1] + ' ' + item[2]]
         image = f"https://api.recc.ooo/static/text/media_{idx}.jpg"
         result = {
             "Category": item[0],
@@ -71,6 +70,7 @@ def convert_media_to_dict(item, idx):
             "Description": item[3],
             "imgURL": image,
             "launchURL": title,
+            "authorURL": author,
         }
         return result
     except Exception as e:
@@ -100,6 +100,7 @@ def convert_place_to_dict(item):
             "Description": item[3],
             "imgURL": image,
             "launchURL": map_image,
+            "authorURL": "",
         }
         return result
     except Exception as e:
@@ -122,7 +123,9 @@ serp_list = []
 serp_result = {}
 serp_image_result = {}
 google_list = []
+google_author_list = []
 google_result = {}
+google_author_result = {}
 google_image_result = {}
 
 
@@ -213,6 +216,22 @@ async def fetch_google_results(session, query, flag):
         else:
             google_result[query] = "https://www.lifespanpodcast.com/content/images/2022/01/Welcome-Message-Title-Card-2.jpg"
 
+async def fetch_google_author_results(session, query):
+    alter_query = query + ' IMDB'
+    params = {
+        'q': alter_query,
+        'cx': cx,
+        'key': os.getenv("GOOGLE_API_KEY"),
+    }
+    try:
+        async with session.get("https://www.googleapis.com/customsearch/v1", params=params) as response:
+            results = await response.json()
+        google_author_result[query] = results['items'][0]['link']
+    except Exception as error:
+        print('author result error:', error)
+        google_author_result[query] = ""
+
+
 # async def get_all_url_for_profile():
     # async with aiohttp.ClientSession() as session:
     #     tasks = []
@@ -235,6 +254,9 @@ async def get_all_url_for_profile(typeCheckflag):
                 tasks.append(task)
                 task = asyncio.ensure_future(fetch_google_results(session, query, 1))
                 tasks.append(task)
+            for query in google_author_list:
+                task = asyncio.ensure_future(fetch_google_author_results(session, query))
+                tasks.append(task)
             results = await asyncio.gather(*tasks)
     else:
         async with aiohttp.ClientSession() as session:
@@ -248,7 +270,8 @@ def insert_item_to_serp_list(item):
     serp_list.append(item[2] + ' ' + item[1] + ' ' + item[0])
     
 def insert_item_to_google_list(item):
-    google_list.append(item[0] + ' ' + item[1] + ' ' + item[2])
+    google_list.append(item[0] + ' ' + item[1])
+    google_author_list.append(item[0] + ' ' + item[1] + ' '+ item[2])
 
 # async def update_answer(apiResponse):
 #     answer = {'media': []}
