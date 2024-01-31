@@ -186,8 +186,9 @@ async def fetch_serp_results(session, query):
 cx = os.getenv("CX_ID")
 
 async def fetch_google_results(session, query, flag):
+    alter_query = query + ' IMDB'
     params = {
-        'q': query,
+        'q': alter_query,
         'cx': cx,
         'key': os.getenv("GOOGLE_API_KEY"),
     }
@@ -370,7 +371,6 @@ async def get_structured_answer_not_functionCalling(context: str):
 async def get_structured_media_answer(context: str):
     # Step 1: send the conversation and available functions to GPT
     start_time = time.time()
-    randon_seed = random.randint(1000, 9999)  
     print(tiktoken_len(context))
     try:
         response = client.chat.completions.create(
@@ -419,7 +419,6 @@ async def get_structured_media_answer(context: str):
 async def get_structured_place_answer(context: str):
     # Step 1: send the conversation and available functions to GPT
     start_time = time.time()
-    random_seed =  random.randint(1000, 9999)
     print(tiktoken_len(context))
     try:
         response = client.chat.completions.create(
@@ -435,11 +434,11 @@ async def get_structured_place_answer(context: str):
                     Category of 'place' should be place type such as restaurants, museums, hotels, tourist destinations and bars.
                     Dont' forget that category of place must be the place type, not the media like book, movies and other words associated to media type.
                     Don't forget that the description must be in the input content and should be the simple part (less than 50 words) of the input, not your knowledge.
-                    Dont' forget that if 1 or 2 of the other 3 properties (category, title and subtitle) are not mentioned in the input content, then you must come up with them using your knowledge.                 
+                    Dont' forget that if 1 or 2 of the other 3 properties (category, title and subtitle) are not mentioned in the input content, then you must come up with them using your knowledge and must contain the area or country in title or subtitle that helps to find correct place among the places which has same names.                 
                     Dont' forget you must find the title using your knowledge and not output 'unknown'. It is illegal.
 
                     Sample output format is below:
-                        {"place": [["bookstore", "The Painted Porch", "Historical bookstore in Bastrop, Texas", "This bookstore "]]}
+                        {"place": [["bookstore", "The Painted Porch in Bastrop, Texas", "Historical bookstore in Bastrop, Texas", "This bookstore "]]}
                     You should output this type.
                 """}
             ],
@@ -470,6 +469,9 @@ async def complete_text(context: str):
     current_time =  time.time()
     result = await asyncio.gather(get_structured_media_answer(context), get_structured_place_answer(context))
     result = {'media' : result[0]['media'] + result[1]['media']}
+    # result =  await get_structured_media_answer(context)
     print("Total time: ", time.time() - current_time)
+    # print(google_image_result)
+    # print(google_result)
     # result = await get_structured_answer_not_functionCalling(context)
     return result
