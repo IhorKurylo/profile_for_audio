@@ -10,6 +10,8 @@ import os
 import random
 import requests
 
+from typing import Tuple
+
 client = OpenAI()
 
 load_dotenv()
@@ -59,9 +61,9 @@ def convert_media_to_dict(item, idx):
     try:
         # if not check_media(item):
         #     return {}
-        title = google_result[item[0] + ' ' + item[1]]
-        get_localImageURL('media', google_image_result[item[0] + ' ' + item[1]], idx)
-        author = google_author_result[item[0] + ' '+ item[1] + ' ' + item[2]]
+        title = google_result[' '.join(item)]
+        get_localImageURL('media', google_image_result[' '.join(item)], idx)
+        author = google_author_result[' '.join(item)]
         image = f"https://api.recc.ooo/static/text/media_{idx}.jpg"
         result = {
             "Category": item[0],
@@ -123,7 +125,6 @@ serp_list = []
 serp_result = {}
 serp_image_result = {}
 google_list = []
-google_author_list = []
 google_result = {}
 google_author_result = {}
 google_image_result = {}
@@ -189,7 +190,7 @@ async def fetch_serp_results(session, query):
 cx = os.getenv("CX_ID")
 
 async def fetch_google_results(session, query, flag):
-    alter_query = query + ' IMDB'
+    alter_query = ' '.join(tuple(query[0:2])) + ' IMDB' if query[0] == 'movie' else ' '.join(tuple(query[0:2]))
     params = {
         'q': alter_query,
         'cx': cx,
@@ -199,25 +200,27 @@ async def fetch_google_results(session, query, flag):
         params['searchType'] = 'image'
         params['num'] = 3
     try:
-        async with session.get("https://www.googleapis.com/customsearch/v1", params=params) as response:
-            results = await response.json()
-        # print("results: ", results)
-        # print("query: ", query, "  result: ", results['items'][0]['link'])
+        try:
+            async with session.get("https://www.googleapis.com/customsearch/v1", params=params) as response:
+                results = await response.json()
+        except Exception as error: 
+            print("GoogleAPI:", error)
         if flag:
-            google_image_result[query] = results['items'][0]['link']
-            print("image: ", results['items'][0]['link'])
+            google_image_result[' '.join(query)] = results['items'][0]['link']
+            # print("image: ", results['items'][0]['link'])
         else:
-            google_result[query] = results['items'][0]['link']
+            google_result[' '.join(query)] = results['items'][0]['link']
             # print("results: ", results)
             # print("google: ", results['items'][0]['link'])
-    except:
+    except Exception as error:
+        print("fetch google result error:", error)
         if flag:
-            google_image_result[query] = "https://www.lifespanpodcast.com/content/images/2022/01/Welcome-Message-Title-Card-2.jpg"
+            google_image_result[' '.join(query)] = "https://www.lifespanpodcast.com/content/images/2022/01/Welcome-Message-Title-Card-2.jpg"
         else:
-            google_result[query] = "https://www.lifespanpodcast.com/content/images/2022/01/Welcome-Message-Title-Card-2.jpg"
+            google_result[' '.join(query)] = "https://www.lifespanpodcast.com/content/images/2022/01/Welcome-Message-Title-Card-2.jpg"
 
 async def fetch_google_author_results(session, query):
-    alter_query = query + ' IMDB'
+    alter_query = ' '.join(tuple(query[0:3])) + ' IMDB' if query[0] == 'movie' else ' '.join(tuple(query[0:3]))
     params = {
         'q': alter_query,
         'cx': cx,
@@ -226,10 +229,10 @@ async def fetch_google_author_results(session, query):
     try:
         async with session.get("https://www.googleapis.com/customsearch/v1", params=params) as response:
             results = await response.json()
-        google_author_result[query] = results['items'][0]['link']
+        google_author_result[' '.join(query)] = results['items'][0]['link']
     except Exception as error:
         print('author result error:', error)
-        google_author_result[query] = ""
+        google_author_result[' '.join(query)] = ""
 
 
 # async def get_all_url_for_profile():
@@ -245,16 +248,15 @@ async def fetch_google_author_results(session, query):
     #         tasks.append(task)
     #     results = await asyncio.gather(*tasks)
 
-async def get_all_url_for_profile(typeCheckflag):
+async def get_all_url_for_profile(apiResponse, typeCheckflag):
     if typeCheckflag == 'media':
         async with aiohttp.ClientSession() as session:
             tasks = []
-            for query in google_list:
+            for query in apiResponse['media']:
                 task = asyncio.ensure_future(fetch_google_results(session, query, 0))
                 tasks.append(task)
                 task = asyncio.ensure_future(fetch_google_results(session, query, 1))
                 tasks.append(task)
-            for query in google_author_list:
                 task = asyncio.ensure_future(fetch_google_author_results(session, query))
                 tasks.append(task)
             results = await asyncio.gather(*tasks)
@@ -270,8 +272,7 @@ def insert_item_to_serp_list(item):
     serp_list.append(item[2] + ' ' + item[1] + ' ' + item[0])
     
 def insert_item_to_google_list(item):
-    google_list.append(item[0] + ' ' + item[1])
-    google_author_list.append(item[0] + ' ' + item[1] + ' '+ item[2])
+    google_list.append(item)
 
 # async def update_answer(apiResponse):
 #     answer = {'media': []}
@@ -309,16 +310,9 @@ def insert_item_to_google_list(item):
 async def update_answer(apiResponse, typeCheckflag):
     answer = {'media': []}
     try:
-        if typeCheckflag == 'media':
-            for item in apiResponse['media']:
-                insert_item_to_google_list(item)
-        if typeCheckflag == 'place':
-            for item in apiResponse['place']:
-                result = insert_item_to_serp_list(item)
-        
-        await get_all_url_for_profile(typeCheckflag)
+        await get_all_url_for_profile(apiResponse, typeCheckflag)
         print("here")
-
+        print(google_list)
         if typeCheckflag == 'media':
             for index, item in enumerate(apiResponse['media']):
                 result = convert_media_to_dict(item, index)
@@ -490,11 +484,12 @@ async def get_structured_place_answer(context: str):
 
 async def complete_text(context: str):
     current_time =  time.time()
-    result = await asyncio.gather(get_structured_media_answer(context), get_structured_place_answer(context))
-    result = {'media' : result[0]['media'] + result[1]['media']}
-    # result =  await get_structured_media_answer(context)
+    # result = await asyncio.gather(get_structured_media_answer(context), get_structured_place_answer(context))
+    # result = {'media' : result[0]['media'] + result[1]['media']}
+    result =  await get_structured_media_answer(context)
     print("Total time: ", time.time() - current_time)
     # print(google_image_result)
     # print(google_result)
     # result = await get_structured_answer_not_functionCalling(context)
     return result
+
