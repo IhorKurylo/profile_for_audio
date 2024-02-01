@@ -484,9 +484,9 @@ async def get_structured_place_answer(context: str):
 
 async def complete_text(context: str):
     current_time =  time.time()
-    # result = await asyncio.gather(get_structured_media_answer(context), get_structured_place_answer(context))
-    # result = {'media' : result[0]['media'] + result[1]['media']}
-    result =  await get_structured_media_answer(context)
+    result = await asyncio.gather(get_structured_media_answer(context), get_structured_place_answer(context))
+    result = {'media' : result[0]['media'] + result[1]['media']}
+    # result =  await get_structured_media_answer(context)
     print("Total time: ", time.time() - current_time)
     # print(google_image_result)
     # print(google_result)
