@@ -3,7 +3,7 @@ import time
 import json
 import tiktoken
 from dotenv import load_dotenv
-from openai import OpenAI, AsyncOpenAI
+from openai import OpenAI
 import aiohttp
 import asyncio
 import os
@@ -93,8 +93,11 @@ def convert_media_to_dict(item, idx):
 
 def convert_place_to_dict(item):
     try:     
-        image = serp_image_result[item[2] + ' ' + item[1] + ' ' + item[0]]
-        map_image = serp_result[item[2] + ' ' + item[1] + ' ' + item[0]]
+        print(serp_image_result)
+        print(serp_result)
+
+        image = serp_image_result[' '.join(item)]
+        map_image = serp_result[' '.join(item)]
         result = {
             "Category": item[0],
             "Title": nullCheck(item[1]),
@@ -131,7 +134,9 @@ google_image_result = {}
 
 
 async def fetch_serp_results(session, query):
-    alt_query = ' '.join(unique_list(query.split()))
+    alt_query = ' '.join(tuple(query[0:3]))
+    # alt_query = unique_list(alt_query)
+    print(alt_query)
     try:
         params = {
             'api_key': os.getenv("SERP_API_KEY"),      # your serpapi api key: https://serpapi.com/manage-api-key
@@ -143,6 +148,7 @@ async def fetch_serp_results(session, query):
         try:
             async with session.get('https://serpapi.com/search.json', params=params) as response:
                 results = await response.json()
+                print(results)
         except Exception as error:
             print(error)
 
@@ -159,6 +165,7 @@ async def fetch_serp_results(session, query):
                 "data": f"!4m5!3m4!1s{data_id}!8m2!3d{lat}!4d{lng}",
                 "api_key": os.getenv("SERP_API_KEY")
             }
+            # print(first_place)
             try:
                 async with session.get('https://serpapi.com/search.json', params=params) as response:
                     results = await response.json()
@@ -167,7 +174,7 @@ async def fetch_serp_results(session, query):
             map_url = results['search_metadata']['google_maps_url']
             if substring_to_replace in map_url:
                 map_url = map_url.replace(substring_to_replace, substring_to_replace + f"@{lat},{lng},17z/")
-            serp_result[query] = map_url
+            serp_result[' '.join(query)] = map_url
             photo_params = {
                 "engine": "google_maps_photos",
                 "data_id": data_id,
@@ -178,9 +185,9 @@ async def fetch_serp_results(session, query):
                     results = await response.json()
             except Exception as error:
                 print(error)
-            
             photo_url = results['photos'][0]['image']
-            serp_image_result[query] = photo_url
+            serp_image_result[' '.join(query)] = photo_url
+            # print("photo_url: ", photo_url)
             # print(serp_image_result[query])
             #print(serp_result[query])
     except Exception as error:
@@ -263,7 +270,7 @@ async def get_all_url_for_profile(apiResponse, typeCheckflag):
     else:
         async with aiohttp.ClientSession() as session:
             tasks = []
-            for query in serp_list:
+            for query in apiResponse['place']:
                 task = asyncio.ensure_future(fetch_serp_results(session, query))
                 tasks.append(task)
             results = await asyncio.gather(*tasks)
