@@ -19,7 +19,7 @@ def pipeline(value, functions):
         result = func(result)
     return result
 
-
+# YouTube video transcription processing
 @router.post("/extract_mentioned_data")
 def extract_mentioned_data(url: str = Form(...)):
     print(url)
@@ -77,7 +77,7 @@ def extract_mentioned_data(url: str = Form(...)):
     return result
 
 
-
+# plain text processing
 @router.post("/extract_text_data")
 def extract_text_data(text: str = Form(...)):
     start_time = time.time()

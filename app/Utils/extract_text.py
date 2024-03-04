@@ -3,7 +3,7 @@ import time
 import json
 import tiktoken
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI,  AsyncOpenAI
 import aiohttp
 import asyncio
 import os
@@ -13,6 +13,7 @@ import requests
 from typing import Tuple
 
 client = OpenAI()
+title_client = AsyncOpenAI()
 
 load_dotenv()
 
@@ -93,8 +94,8 @@ def convert_media_to_dict(item, idx):
 
 def convert_place_to_dict(item):
     try:     
-        print(serp_image_result)
-        print(serp_result)
+        # print(serp_image_result)
+        # print(serp_result)
 
         image = serp_image_result[' '.join(item)]
         map_image = serp_result[' '.join(item)]
@@ -136,7 +137,7 @@ google_image_result = {}
 async def fetch_serp_results(session, query):
     alt_query = ' '.join(tuple(query[0:3]))
     # alt_query = unique_list(alt_query)
-    print(alt_query)
+    # print(alt_query)
     try:
         params = {
             'api_key': os.getenv("SERP_API_KEY"),      # your serpapi api key: https://serpapi.com/manage-api-key
@@ -148,7 +149,7 @@ async def fetch_serp_results(session, query):
         try:
             async with session.get('https://serpapi.com/search.json', params=params) as response:
                 results = await response.json()
-                print(results)
+                # print(results)
         except Exception as error:
             print(error)
 
@@ -281,45 +282,12 @@ def insert_item_to_serp_list(item):
 def insert_item_to_google_list(item):
     google_list.append(item)
 
-# async def update_answer(apiResponse):
-#     answer = {'media': []}
-#     try:
-#         if 'media' in apiResponse:
-#             for item in apiResponse['media']:
-#                 insert_item_to_google_list(item)
-#         if 'place' in apiResponse:
-#             for item in apiResponse['place']:
-#                 result = insert_item_to_serp_list(item)
-        
-#         await get_all_url_for_profile()
-#         print("here")
-
-#         if 'media' in apiResponse:
-#             for index, item in enumerate(apiResponse['media']):
-#                 result = convert_media_to_dict(item, index)
-#                 if not result:
-#                     continue
-#                 else:
-#                     answer['media'].append(result)
-#         if 'place' in apiResponse:
-#             for item in apiResponse['place']:
-#                 result = convert_place_to_dict(item)
-#                 if not result:
-#                     continue
-#                 else:
-#                     answer['media'].append(result)
-#         return answer
-#     except Exception as e:
-#         print(e)
-#         print("update answer error!")
-#         return []
-
 async def update_answer(apiResponse, typeCheckflag):
     answer = {'media': []}
     try:
         await get_all_url_for_profile(apiResponse, typeCheckflag)
-        print("here")
-        print(google_list)
+        print("update_answer() is started")
+        # print(google_list)
         if typeCheckflag == 'media':
             for index, item in enumerate(apiResponse['media']):
                 result = convert_media_to_dict(item, index)
@@ -392,10 +360,53 @@ async def get_structured_answer_not_functionCalling(context: str):
         print("hello")
         return {}
 
+async def get_title(context: str):
+    # Step 1: send the conversation and available functions to GPT
+    start_time = time.time()
+    print("get_title() is started")
+    try:
+        response = await title_client.chat.completions.create(
+            model='gpt-4-0125-preview',
+            max_tokens=2000,
+            messages=[
+                {'role': 'system', 'content': "Get the extracted title and brief overview from the input content."},
+                {'role': 'user', 'content': f"""
+                    This is the input context you have to analyze.
+                    {context}""" +
+                    """
+                    Extract this context and create the title of this context and brief overview focusing on the entire context meaning.
+                    Remember that title has less than 10 words and brief overview has less than 50 words.
+                    Main point is extraction focusing on date, place, name, etc.
+                    Sample output list format is below:
+                    ["Remene in Italy.","This is Joe's vocation journey in Italy."]
+                """}
+            ],
+            seed= 4826,
+            temperature = 0.5,
+        )
+        response_message = response.choices[0].message.content
+        json_response = json.loads(response_message)
+        # print(type(response_message))
+        print("title result is:", response_message)
+        system_fingerprint = response.system_fingerprint
+        print("media_fingerprint: ", system_fingerprint)
+        # print(randon_seed)
+        print("Elapsed Time: ", time.time() - start_time)
+    except Exception as e:
+        print(e)
+        print("hello")
+        return {}
+    try:
+        print()
+        return json_response
+    except Exception as error:
+        print(error)
+        return {}
+
 async def get_structured_media_answer(context: str):
     # Step 1: send the conversation and available functions to GPT
     start_time = time.time()
-    print(tiktoken_len(context))
+    print("media function is started")
     try:
         response = client.chat.completions.create(
             model='gpt-4-0125-preview',
@@ -425,6 +436,7 @@ async def get_structured_media_answer(context: str):
         response_message = response.choices[0].message.content
         json_response = json.loads(response_message)
         print(json_response)
+        print(type(json_response))
         system_fingerprint = response.system_fingerprint
         print("media_fingerprint: ", system_fingerprint)
         # print(randon_seed)
@@ -443,7 +455,7 @@ async def get_structured_media_answer(context: str):
 async def get_structured_place_answer(context: str):
     # Step 1: send the conversation and available functions to GPT
     start_time = time.time()
-    print(tiktoken_len(context))
+    print("place function is started")
     try:
         response = client.chat.completions.create(
             model='gpt-4-0125-preview',
@@ -491,9 +503,10 @@ async def get_structured_place_answer(context: str):
 
 async def complete_text(context: str):
     current_time =  time.time()
-    result = await asyncio.gather(get_structured_media_answer(context), get_structured_place_answer(context))
-    result = {'media' : result[0]['media'] + result[1]['media']}
-    # result =  await get_structured_media_answer(context)
+    result = await asyncio.gather(get_title(context), get_structured_media_answer(context), get_structured_place_answer(context))
+    # result = {'title': result[0]['title'], 'overview': result[0]['overview']} + {'media' : result[1]['media'] + result[2]['media']}
+    # result =  await get_title(context)
+    result =  {'title': result[0][0], 'overview': result[0][1], 'media': result[1]['media'] + result[2]['media']}
     print("Total time: ", time.time() - current_time)
     # print(google_image_result)
     # print(google_result)

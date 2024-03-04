@@ -117,3 +117,6 @@ xdg==5
 xkit==0.0.0
 yarl==1.9.3
 zipp==1.0.0
+PyJWT==2.8.0
+aiohttp-retry==2.8.3
+twilio==9.0.0
