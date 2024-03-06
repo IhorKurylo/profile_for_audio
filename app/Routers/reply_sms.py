@@ -10,7 +10,7 @@ async def reply_sms(request: Request):
     body = form_data.get('Body', None)
     print(body)
     
-    openai_result = await complete_text(body)    
+    # openai_result = await complete_text(body)    
     # Start our TwiML response
     resp = MessagingResponse()
         
@@ -21,7 +21,7 @@ async def reply_sms(request: Request):
     #     resp.message("Goodbye")
     # else :
     #     resp.message("Dear Client.")
-    resp.message(openai_result)
+    resp.message(body)
     print(str(resp))
     # Convert the Twilio response to a string and return it
     return Response(content=str(resp), media_type="application/xml")

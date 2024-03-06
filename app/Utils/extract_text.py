@@ -267,14 +267,14 @@ async def get_all_url_for_profile(apiResponse, typeCheckflag):
                 tasks.append(task)
                 task = asyncio.ensure_future(fetch_google_author_results(session, query))
                 tasks.append(task)
-            results = await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks, return_exceptions=True)
     else:
         async with aiohttp.ClientSession() as session:
             tasks = []
             for query in apiResponse['place']:
                 task = asyncio.ensure_future(fetch_serp_results(session, query))
                 tasks.append(task)
-            results = await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks, return_exceptions=True)
 
 def insert_item_to_serp_list(item):
     serp_list.append(item[2] + ' ' + item[1] + ' ' + item[0])
@@ -287,7 +287,6 @@ async def update_answer(apiResponse, typeCheckflag):
     try:
         await get_all_url_for_profile(apiResponse, typeCheckflag)
         print("update_answer() is started")
-        # print(google_list)
         if typeCheckflag == 'media':
             for index, item in enumerate(apiResponse['media']):
                 result = convert_media_to_dict(item, index)
@@ -503,13 +502,16 @@ async def get_structured_place_answer(context: str):
 
 async def complete_text(context: str):
     current_time =  time.time()
-    result = await asyncio.gather(get_title(context), get_structured_media_answer(context), get_structured_place_answer(context))
-    # result = {'title': result[0]['title'], 'overview': result[0]['overview']} + {'media' : result[1]['media'] + result[2]['media']}
-    # result =  await get_title(context)
-    result =  {'title': result[0][0], 'overview': result[0][1], 'media': result[1]['media'] + result[2]['media']}
+    # result = await asyncio.gather(get_title(context), get_structured_media_answer(context), get_structured_place_answer(context))
+    # Run all async tasks concurrently and wait for all of them to finish.
+    title_result = await get_title(context)
+    media_result = await get_structured_media_answer(context)
+    place_result = await get_structured_place_answer(context)
+    # Combine the results into a single dictionary.
+    result = {
+        'title': title_result[0],
+        'overview': title_result[1],
+        'media': media_result['media'] + place_result['media']
+    }
     print("Total time: ", time.time() - current_time)
-    # print(google_image_result)
-    # print(google_result)
-    # result = await get_structured_answer_not_functionCalling(context)
     return result
-
