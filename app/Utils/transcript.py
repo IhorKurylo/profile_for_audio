@@ -11,7 +11,6 @@ from googleapiclient.discovery import build
 load_dotenv()
 tokenizer = tiktoken.get_encoding('cl100k_base')
 
-
 def tiktoken_len(text):
     tokens = tokenizer.encode(
         text,

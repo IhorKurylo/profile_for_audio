@@ -5,3 +5,4 @@
 __pycache__
 pinecone.py
 transcript.py_
+extract_keywords_YouTube.py
