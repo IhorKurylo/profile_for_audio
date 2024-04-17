@@ -70,7 +70,7 @@ async def complete_text_test(context: str):
     result = {
         'title': title_result[0],
         'overview': title_result[1],
-        'media': temp_result
     }
+    result['media'] = media_result['media'] + place_result['media']
     print("total time: ", time.time() - current_time)
     return result
