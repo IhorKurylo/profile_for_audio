@@ -1,7 +1,7 @@
 import time
 from app.Utils.extra import get_title, get_structured_place_answer, get_structured_media_answer
 
-async def complete_text(context: str):
+async def complete_text_test(context: str):
     current_time =  time.time()
     # result = await asyncio.gather(get_title(context), get_structured_media_answer(context), get_structured_place_answer(context))
     # Run all async tasks concurrently and wait for all of them to finish.
@@ -43,7 +43,7 @@ async def complete_youtube(context: str):
     return result
 
 
-async def complete_text_test(context: str):
+async def complete_text(context: str):
     current_time =  time.time()
     # result = await asyncio.gather(get_title(context), get_structured_media_answer(context), get_structured_place_answer(context))
     # Run all async tasks concurrently and wait for all of them to finish.

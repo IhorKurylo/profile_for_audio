@@ -58,7 +58,7 @@ def nullCheck(data: str):
         case _:
             return data
 
-def convert_media_to_dict(item, idx):
+def convert_media_to_dict_test(item, idx):
     # print(item)
     try:
         # if not check_media(item):
@@ -93,7 +93,7 @@ def convert_media_to_dict(item, idx):
         print("convert media to dict error!")
         return result
 
-def convert_media_to_dict_test(item, idx):
+def convert_media_to_dict(item, idx):
     # print(item)
     try:
         # if not check_media(item):
@@ -329,7 +329,7 @@ async def update_answer(apiResponse, typeCheckflag:str, test:bool):
         print("update_answer() is started")
         if typeCheckflag == 'media':
             for index, item in enumerate(apiResponse['media']):
-                result = convert_media_to_dict_test(item, index) if test else convert_media_to_dict(item, index)
+                result = convert_media_to_dict(item, index) if test else convert_media_to_dict_test(item, index)
                 if not result:
                     continue
                 else:
